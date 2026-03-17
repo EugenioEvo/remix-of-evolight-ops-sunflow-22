@@ -82,7 +82,7 @@ export async function getPlantsWithStats(): Promise<SolarPlantWithStats[]> {
     .select(`${PLANT_COLS}, ${STATS_COLS}`)
     .order('name');
   if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map(normalizePlant);
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(normalizePlant);
 }
 
 export async function getPlantById(id: string): Promise<SolarPlantWithStats | null> {
@@ -92,7 +92,7 @@ export async function getPlantById(id: string): Promise<SolarPlantWithStats | nu
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? normalizePlant(data as Record<string, unknown>) : null;
+  return data ? normalizePlant(data as unknown as Record<string, unknown>) : null;
 }
 
 export async function createPlant(plant: CreateSolarPlant): Promise<SolarPlant> {
@@ -123,7 +123,7 @@ export async function createPlant(plant: CreateSolarPlant): Promise<SolarPlant> 
     .single();
 
   if (error) throw error;
-  const row = data as Record<string, unknown>;
+  const row = data as unknown as Record<string, unknown>;
   return {
     id: row.id as string,
     name: row.name as string,
