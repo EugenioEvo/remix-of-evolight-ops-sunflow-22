@@ -123,7 +123,7 @@ export async function createPlant(plant: CreateSolarPlant): Promise<SolarPlant> 
     .single();
 
   if (error) throw error;
-  const row = data as Record<string, unknown>;
+  const row = data as unknown as Record<string, unknown>;
   return {
     id: row.id as string,
     name: row.name as string,
