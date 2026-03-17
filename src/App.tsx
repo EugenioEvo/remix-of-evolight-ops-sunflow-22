@@ -40,6 +40,7 @@ import PlantNew from "./pages/PlantNew";
 import PlantDetail from "./pages/PlantDetail";
 import SunflowWorkOrders from "./pages/SunflowWorkOrders";
 import SunflowAlerts from "./pages/SunflowAlerts";
+import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,10 +150,20 @@ const App = () => (
                             {/* Sunflow O&M Pro */}
                             <Route path="/sunflow" element={<SunflowDashboard />} />
                             <Route path="/sunflow/plants" element={<Plants />} />
-                            <Route path="/sunflow/plants/new" element={<PlantNew />} />
+                            <Route path="/sunflow/plants/new" element={
+                              <ProtectedRoute roles={['admin', 'area_tecnica']}>
+                                <PlantNew />
+                              </ProtectedRoute>
+                            } />
                             <Route path="/sunflow/plants/:id" element={<PlantDetail />} />
                             <Route path="/sunflow/work-orders" element={<SunflowWorkOrders />} />
-                            <Route path="/sunflow/alerts" element={<SunflowAlerts />} />
+                            <Route path="/sunflow/alerts" element={
+                              <ProtectedRoute roles={['admin', 'area_tecnica', 'tecnico_campo']}>
+                                <SunflowAlerts />
+                              </ProtectedRoute>
+                            } />
+                            {/* Configurações */}
+                            <Route path="/configuracoes" element={<Configuracoes />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>
