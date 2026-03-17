@@ -34,6 +34,12 @@ import WorkOrders from "./pages/WorkOrders";
 import WorkOrderCreate from "./pages/WorkOrderCreate";
 import WorkOrderDetail from "./pages/WorkOrderDetail";
 import RMEWizard from "./pages/RMEWizard";
+import SunflowDashboard from "./pages/SunflowDashboard";
+import Plants from "./pages/Plants";
+import PlantNew from "./pages/PlantNew";
+import PlantDetail from "./pages/PlantDetail";
+import SunflowWorkOrders from "./pages/SunflowWorkOrders";
+import SunflowAlerts from "./pages/SunflowAlerts";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -140,6 +146,13 @@ const App = () => (
                             } />
                             <Route path="/work-orders/:id" element={<WorkOrderDetail />} />
                             <Route path="/rme-wizard/:id" element={<RMEWizard />} />
+                            {/* Sunflow O&M Pro */}
+                            <Route path="/sunflow" element={<SunflowDashboard />} />
+                            <Route path="/sunflow/plants" element={<Plants />} />
+                            <Route path="/sunflow/plants/new" element={<PlantNew />} />
+                            <Route path="/sunflow/plants/:id" element={<PlantDetail />} />
+                            <Route path="/sunflow/work-orders" element={<SunflowWorkOrders />} />
+                            <Route path="/sunflow/alerts" element={<SunflowAlerts />} />
                             <Route path="*" element={<NotFound />} />
                           </Routes>
                         </main>
