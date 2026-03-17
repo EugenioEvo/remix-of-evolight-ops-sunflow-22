@@ -152,7 +152,9 @@ const WorkOrderCreate = () => {
     try {
       // 1. Criar ticket primeiro
       const { data: userData } = await supabase.auth.getUser();
-      
+      const userId = userData.user?.id;
+      if (!userId) throw new Error('Usuário não autenticado');
+
       // Buscar endereço do cliente
       const { data: clienteData } = await supabase
         .from("clientes")
@@ -175,7 +177,7 @@ const WorkOrderCreate = () => {
           equipamento_tipo: "outros" as const,
           prioridade: data.servico_solicitado === "emergencia" ? "critica" as const : "media" as const,
           status: "ordem_servico_gerada" as const,
-          created_by: userData.user?.id!,
+          created_by: userId,
           data_vencimento: data.data_programada.toISOString(),
         }])
         .select()

@@ -29,6 +29,18 @@ export function useRealtimeSubscription<T = Record<string, unknown>>(
     onChange,
   } = options;
 
+  // Keep callback refs up-to-date on every render to avoid stale closures.
+  const onInsertRef = useRef(onInsert);
+  const onUpdateRef = useRef(onUpdate);
+  const onDeleteRef = useRef(onDelete);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onInsertRef.current = onInsert;
+    onUpdateRef.current = onUpdate;
+    onDeleteRef.current = onDelete;
+    onChangeRef.current = onChange;
+  });
+
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
@@ -46,16 +58,17 @@ export function useRealtimeSubscription<T = Record<string, unknown>>(
       const record = (payload.new ?? payload.old) as T;
       const ev = payload.eventType as RealtimeEvent;
 
-      onChange?.(ev, record);
-      if (ev === 'INSERT') onInsert?.(record);
-      if (ev === 'UPDATE') onUpdate?.(record);
-      if (ev === 'DELETE') onDelete?.(record);
+      onChangeRef.current?.(ev, record);
+      if (ev === 'INSERT') onInsertRef.current?.(record);
+      if (ev === 'UPDATE') onUpdateRef.current?.(record);
+      if (ev === 'DELETE') onDeleteRef.current?.(record);
     });
 
     channel.subscribe();
     channelRef.current = channel;
 
     return () => {
+      channel.unsubscribe();
       supabase.removeChannel(channel);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
