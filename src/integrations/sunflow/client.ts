@@ -82,7 +82,7 @@ export async function getPlantsWithStats(): Promise<SolarPlantWithStats[]> {
     .select(`${PLANT_COLS}, ${STATS_COLS}`)
     .order('name');
   if (error) throw error;
-  return ((data ?? []) as Record<string, unknown>[]).map(normalizePlant);
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map(normalizePlant);
 }
 
 export async function getPlantById(id: string): Promise<SolarPlantWithStats | null> {
