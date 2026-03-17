@@ -42,7 +42,7 @@ export function useRealtimeSubscription<T = Record<string, unknown>>(
       ...(filter ? { filter } : {}),
     };
 
-    channel.on('postgres_changes', postgresConfig, (payload) => {
+    (channel as any).on('postgres_changes', postgresConfig, (payload: any) => {
       const record = (payload.new ?? payload.old) as T;
       const ev = payload.eventType as RealtimeEvent;
 
