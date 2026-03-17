@@ -92,7 +92,7 @@ export async function getPlantById(id: string): Promise<SolarPlantWithStats | nu
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
-  return data ? normalizePlant(data as Record<string, unknown>) : null;
+  return data ? normalizePlant(data as unknown as Record<string, unknown>) : null;
 }
 
 export async function createPlant(plant: CreateSolarPlant): Promise<SolarPlant> {
