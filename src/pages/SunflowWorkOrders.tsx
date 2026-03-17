@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ClipboardList, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,9 @@ type TypeFilter = WorkOrderType | 'all';
 type PriorityFilter = WorkOrderPriority | 'all';
 
 export default function SunflowWorkOrders() {
+  const [searchParams] = useSearchParams();
+  const plantIdParam = searchParams.get('plant_id') ?? undefined;
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
@@ -26,9 +29,10 @@ export default function SunflowWorkOrders() {
         status: statusFilter !== 'all' ? statusFilter : undefined,
         type: typeFilter !== 'all' ? typeFilter : undefined,
         priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+        plant_id: plantIdParam,
         pageSize: 50,
       }),
-    [statusFilter, typeFilter, priorityFilter]
+    [statusFilter, typeFilter, priorityFilter, plantIdParam]
   );
 
   const workOrders = (result?.data ?? []).filter(

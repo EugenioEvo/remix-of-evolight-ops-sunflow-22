@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, Search, CheckCircle, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,9 @@ type StatusFilter = AlertStatus | 'all';
 type SeverityFilter = AlertSeverity | 'all';
 
 export default function SunflowAlerts() {
+  const [searchParams] = useSearchParams();
+  const plantIdParam = searchParams.get('plant_id') ?? undefined;
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
@@ -28,9 +32,10 @@ export default function SunflowAlerts() {
       getAlerts({
         status: statusFilter !== 'all' ? statusFilter : undefined,
         severity: severityFilter !== 'all' ? severityFilter : undefined,
+        plant_id: plantIdParam,
         pageSize: 100,
       }),
-    [statusFilter, severityFilter]
+    [statusFilter, severityFilter, plantIdParam]
   );
 
   useRealtimeSubscription<Alert>({
@@ -53,8 +58,12 @@ export default function SunflowAlerts() {
   const resolvedCount = alerts.filter((a) => a.status === 'resolved').length;
 
   const handleAcknowledge = async (id: string) => {
+    if (!user) {
+      toast({ title: 'Usuário não autenticado', variant: 'destructive' });
+      return;
+    }
     try {
-      await acknowledgeAlert(id, user!.id);
+      await acknowledgeAlert(id, user.id);
       toast({ title: 'Alerta reconhecido' });
       refetch();
     } catch {

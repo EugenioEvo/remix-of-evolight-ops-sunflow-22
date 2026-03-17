@@ -20,7 +20,7 @@ export default function PlantDetail() {
   const { id } = useParams<{ id: string }>();
 
   const { data: plant, loading: plantLoading } = useSupabaseQuery(
-    () => getPlantById(id!),
+    () => id ? getPlantById(id) : Promise.resolve(null),
     [id]
   );
 
