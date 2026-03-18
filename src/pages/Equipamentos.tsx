@@ -198,7 +198,7 @@ const Equipamentos = () => {
 
       if (error) {
         toast.error('Erro ao remover equipamento');
-        console.error('Error deleting equipamento:', error);
+        logger.error('Error deleting equipamento:', error);
         return;
       }
 
