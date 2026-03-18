@@ -129,7 +129,7 @@ export const useRouteOptimization = () => {
 
       // Se Mapbox não funcionou, tentar OSRM
       if (!data?.success) {
-        console.log('[RouteOpt] Tentando OSRM...');
+        logger.info('[RouteOpt] Tentando OSRM...');
         const osrmStart = Date.now();
         try {
           const osrmResult = await supabase.functions.invoke('optimize-route-osrm', {
