@@ -126,7 +126,7 @@ export const useNotifications = () => {
         setNaoLidas(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('Erro ao deletar notificação:', error);
+      logger.error('Erro ao deletar notificação:', error);
     }
   };
 

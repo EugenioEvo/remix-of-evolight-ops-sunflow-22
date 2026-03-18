@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Após todas as tentativas, se não encontrou nada
       setProfile(null);
     } catch (error) {
-      console.error('Erro ao buscar/criar perfil:', error);
+      logger.error('Erro ao buscar/criar perfil:', error);
       setProfile(null);
     }
   };

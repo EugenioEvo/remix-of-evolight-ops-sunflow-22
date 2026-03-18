@@ -76,7 +76,7 @@ export const useRMEApprovals = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao rejeitar RME:', error);
+      logger.error('Erro ao rejeitar RME:', error);
       toast({
         title: 'Erro ao rejeitar',
         description: error.message,
