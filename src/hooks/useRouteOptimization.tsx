@@ -113,7 +113,7 @@ export const useRouteOptimization = () => {
         logger.info(`[RouteOpt] Mapbox respondeu em ${Date.now() - mapboxStart}ms`);
         
         if (mapboxResult.error) {
-          console.warn('[RouteOpt] Mapbox invoke error:', mapboxResult.error);
+          logger.warn('[RouteOpt] Mapbox invoke error:', mapboxResult.error);
         } else if (mapboxResult.data?.success) {
           data = mapboxResult.data;
           provider = 'mapbox';
