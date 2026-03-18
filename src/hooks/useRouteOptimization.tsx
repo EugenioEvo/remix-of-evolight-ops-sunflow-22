@@ -206,7 +206,7 @@ export const useRouteOptimization = () => {
           }, {
             onConflict: 'tecnico_id,data_rota'
           });
-          console.log('[RouteOpt] Rota persistida no banco');
+          logger.info('[RouteOpt] Rota persistida no banco');
         } catch (err) {
           console.warn('[RouteOpt] Erro ao persistir rota:', err);
         }
