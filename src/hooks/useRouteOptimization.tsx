@@ -110,7 +110,7 @@ export const useRouteOptimization = () => {
           body: { coordinates }
         });
         
-        console.log(`[RouteOpt] Mapbox respondeu em ${Date.now() - mapboxStart}ms`);
+        logger.info(`[RouteOpt] Mapbox respondeu em ${Date.now() - mapboxStart}ms`);
         
         if (mapboxResult.error) {
           console.warn('[RouteOpt] Mapbox invoke error:', mapboxResult.error);
