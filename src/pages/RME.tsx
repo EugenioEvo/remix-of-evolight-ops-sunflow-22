@@ -140,7 +140,7 @@ const RME = () => {
 
       setSelectedOS(osData);
     } catch (error: any) {
-      console.error('Erro inesperado ao carregar OS:', error);
+      logger.error('Erro inesperado ao carregar OS:', error);
       toast({
         title: 'Erro inesperado',
         description: 'Ocorreu um erro inesperado. Tente novamente.',
