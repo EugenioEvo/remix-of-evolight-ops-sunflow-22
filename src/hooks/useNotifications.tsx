@@ -107,7 +107,7 @@ export const useNotifications = () => {
       setNotificacoes(prev => prev.map(n => ({ ...n, lida: true })));
       setNaoLidas(0);
     } catch (error) {
-      console.error('Erro ao marcar todas como lidas:', error);
+      logger.error('Erro ao marcar todas como lidas:', error);
     }
   };
 
