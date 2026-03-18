@@ -26,7 +26,7 @@ const MarkerCluster: React.FC<MarkerClusterProps> = ({ markers, disableClusterin
 
     // Check if markerClusterGroup is available
     if (typeof (L as any).markerClusterGroup !== 'function') {
-      console.warn('MarkerCluster: L.markerClusterGroup is not available');
+      return;
       return;
     }
 
