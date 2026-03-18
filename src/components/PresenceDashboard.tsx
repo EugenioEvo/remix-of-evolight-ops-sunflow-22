@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { CheckCircle, Clock, AlertTriangle, TrendingUp, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
+import { logger } from '@/services/api';
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
