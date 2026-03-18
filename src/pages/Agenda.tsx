@@ -115,7 +115,7 @@ const Agenda = () => {
       if (error) throw error;
       setOrdensServico((data as any) || []);
     } catch (error) {
-      console.error('Erro ao carregar agenda:', error);
+      logger.error('Erro ao carregar agenda:', error);
     } finally {
       setLoading(false);
     }
