@@ -189,20 +189,20 @@ const RMEWizard = () => {
   const loadExistingRME = async (rmeId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("rme_relatorios")
-        .select(`
-          *,
-          tecnicos(id, profiles(nome)),
-          ordens_servico(
-            id, numero_os, site_name, ticket_id,
-            tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
-          )
-        `)
-        .eq("id", rmeId)
-        .single();
-
-      if (error) throw error;
+      const data = await fetchData(
+        supabase
+          .from("rme_relatorios")
+          .select(`
+            *,
+            tecnicos(id, profiles(nome)),
+            ordens_servico(
+              id, numero_os, site_name, ticket_id,
+              tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
+            )
+          `)
+          .eq("id", rmeId)
+          .single()
+      );
 
       const os = data.ordens_servico as any;
       const tecnico = data.tecnicos as any;
@@ -238,12 +238,14 @@ const RMEWizard = () => {
       });
 
       // Load checklist items
-      const { data: items } = await supabase
-        .from("rme_checklist_items")
-        .select("*")
-        .eq("rme_id", rmeId)
-        .order("category")
-        .order("item_key");
+      const items = await fetchData(
+        supabase
+          .from("rme_checklist_items")
+          .select("*")
+          .eq("rme_id", rmeId)
+          .order("category")
+          .order("item_key")
+      );
 
       setChecklistItems(items || []);
     } catch (error: any) {
