@@ -66,7 +66,7 @@ export const useRouteOptimization = () => {
       const [lat, lon] = t.coordenadas;
       const isValid = isValidCoordinate(lat, lon);
       if (!isValid) {
-        console.warn(`[RouteOpt] Coordenada inválida ignorada: ticket ${t.id}`, t.coordenadas);
+        logger.warn(`[RouteOpt] Coordenada inválida ignorada: ticket ${t.id}`, t.coordenadas);
       }
       return isValid;
     });
