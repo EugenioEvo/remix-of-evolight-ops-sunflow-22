@@ -1306,7 +1306,7 @@ const Tickets = () => {
                                         .createSignedUrl(filePath, 60 * 60 * 24 * 7);
                                       
                                       if (error) {
-                                        console.error('Erro ao gerar URL:', error);
+                                        logger.error('Erro ao gerar URL:', error);
                                         throw error;
                                       }
                                       
