@@ -213,7 +213,7 @@ export const useRouteOptimization = () => {
       }
 
       const elapsed = Date.now() - startTime;
-      console.log(`[RouteOpt] ✅ Completo em ${elapsed}ms via ${provider}`);
+      logger.info(`[RouteOpt] ✅ Completo em ${elapsed}ms via ${provider}`);
 
       return {
         tickets: reorderedTickets,
