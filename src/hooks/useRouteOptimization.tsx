@@ -136,7 +136,7 @@ export const useRouteOptimization = () => {
             body: { coordinates }
           });
           
-          console.log(`[RouteOpt] OSRM respondeu em ${Date.now() - osrmStart}ms`);
+          logger.info(`[RouteOpt] OSRM respondeu em ${Date.now() - osrmStart}ms`);
           
           if (osrmResult.error) {
             console.warn('[RouteOpt] OSRM invoke error:', osrmResult.error);
