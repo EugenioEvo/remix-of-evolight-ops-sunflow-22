@@ -145,7 +145,7 @@ export const useRouteOptimization = () => {
             provider = 'osrm';
             logger.info(`[RouteOpt] ✅ OSRM OK via ${osrmResult.data.server}: ${data.route?.distanceKm} km`);
           } else {
-            console.warn('[RouteOpt] OSRM fallback:', osrmResult.data?.error);
+            logger.warn('[RouteOpt] OSRM fallback:', osrmResult.data?.error);
           }
         } catch (err) {
           console.warn('[RouteOpt] OSRM exception:', err);
