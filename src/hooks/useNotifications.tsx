@@ -88,7 +88,7 @@ export const useNotifications = () => {
       );
       setNaoLidas(prev => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Erro ao marcar notificação como lida:', error);
+      logger.error('Erro ao marcar notificação como lida:', error);
     }
   };
 
