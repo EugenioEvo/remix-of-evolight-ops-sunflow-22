@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .maybeSingle();
 
         if (error) {
-          console.error('Erro ao buscar perfil:', error);
+          logger.error('Erro ao buscar perfil:', error);
         }
 
         // Se não existe perfil na primeira tentativa, criar (só se tiver sessão)
