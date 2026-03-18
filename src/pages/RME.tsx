@@ -194,17 +194,9 @@ const RME = () => {
     
     for (const file of files) {
       const fileName = `${user?.id}/${folder}/${Date.now()}_${file.name}`;
-      const { error } = await supabase.storage
-        .from('rme-fotos')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data } = supabase.storage
-        .from('rme-fotos')
-        .getPublicUrl(fileName);
-      
-      urls.push(data.publicUrl);
+      await storageService.upload('rme-fotos', fileName, file);
+      const publicUrl = storageService.getPublicUrl('rme-fotos', fileName);
+      urls.push(publicUrl);
     }
     
     return urls;
