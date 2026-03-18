@@ -112,7 +112,7 @@ const Prestadores = () => {
       setPrestadores(data || []);
     } catch (error) {
       toast.error('Erro ao carregar prestadores');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
