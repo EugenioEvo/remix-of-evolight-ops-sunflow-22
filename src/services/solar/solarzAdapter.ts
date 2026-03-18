@@ -1,5 +1,5 @@
 // SolarZ API adapter – implements ISolarMonitoringSource
-import { logger } from '@/lib/logger';
+import logger from '@/lib/logger';
 import type {
   ISolarMonitoringSource,
   SolarPlant,

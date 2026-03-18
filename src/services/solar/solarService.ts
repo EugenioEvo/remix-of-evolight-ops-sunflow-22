@@ -1,6 +1,6 @@
 // Solar monitoring service – Facade that syncs provider data into the database
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/lib/logger';
+import logger from '@/lib/logger';
 import type { ISolarMonitoringSource, DateRange } from './types';
 
 export class SolarService {
