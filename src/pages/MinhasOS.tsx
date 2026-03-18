@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/services/api';
+import { useState } from "react";
+import logger from '@/lib/logger';
 import { useAuth } from "@/hooks/useAuth";
-import { useTicketsRealtime } from "@/hooks/useTicketsRealtime";
+import { useOrdensServicoByTecnico, useUpdateOSStatus } from "@/hooks/useOrdensServico";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,8 +55,6 @@ interface OrdemServico {
 }
 
 const MinhasOS = () => {
-  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
-  const [loading, setLoading] = useState(true);
   const [prioridadeFiltro, setPrioridadeFiltro] = useState<string>('todas');
   const [periodoFiltro, setPeriodoFiltro] = useState<string>('todos');
   const [activeTab, setActiveTab] = useState<string>('pendentes');
@@ -72,138 +69,39 @@ const MinhasOS = () => {
   const isAreaTecnica = profile?.role === "area_tecnica" || profile?.role === "admin";
   const canViewOS = isTecnico || isAreaTecnica;
 
-  // Auto-reload quando houver mudanças em tickets/OS
-  useTicketsRealtime({
-    onTicketChange: () => {
-      if (canViewOS) {
-        loadOrdensServico();
-      }
-    }
+  // React Query hook with built-in realtime
+  const { data: ordensServicoData, isLoading: loading } = useOrdensServicoByTecnico({
+    profileId: profile?.id,
+    isTecnico,
+    enabled: canViewOS,
   });
 
-  useEffect(() => {
-    if (canViewOS) {
-      loadOrdensServico();
-    }
-  }, [canViewOS]);
+  const updateStatusMutation = useUpdateOSStatus();
 
-  const loadOrdensServico = async () => {
-    try {
-      setLoading(true);
-
-      let query = supabase
-        .from("ordens_servico")
-        .select(`
-          *,
-          data_programada,
-          hora_inicio,
-          hora_fim,
-          equipe,
-          servico_solicitado,
-          inspetor_responsavel,
-          tipo_trabalho,
-          tickets!inner (
-            id,
-            numero_ticket,
-            titulo,
-            descricao,
-            endereco_servico,
-            prioridade,
-            status,
-            data_inicio_execucao,
-            clientes (
-              empresa,
-              endereco,
-              cidade,
-              estado,
-              profiles!clientes_profile_id_fkey(telefone)
-            )
-          )
-        `)
-        .order("data_emissao", { ascending: false });
-
-      // Se for técnico de campo, filtrar apenas suas OSs
-      if (isTecnico) {
-        const { data: tecnicoData, error: tecnicoError } = await supabase
-          .from("tecnicos")
-          .select("id")
-          .eq("profile_id", profile?.id)
-          .single();
-
-        if (tecnicoError) {
-          toast({
-            title: "Erro ao carregar perfil",
-            description: "Seu usuário não está vinculado a um perfil de técnico. Solicite à área técnica o cadastro do seu usuário como técnico ou ajuste o e-mail.",
-            variant: "destructive",
-          });
-          throw tecnicoError;
-        }
-        
-        query = query.eq("tecnico_id", tecnicoData.id);
-      }
-      // Área técnica e admin veem todas as OSs
-
-      const { data: osData, error: osError } = await query;
-
-      if (osError) throw osError;
-
-      setOrdensServico(osData || []);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar ordens de serviço",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const ordensServico = (ordensServicoData as OrdemServico[]) || [];
 
   const handleIniciarExecucao = async (os: OrdemServico) => {
     setStartingId(os.id);
     try {
-      const { error } = await supabase
-        .from("tickets")
-        .update({ 
-          status: "em_execucao",
-          data_inicio_execucao: new Date().toISOString()
-        })
-        .eq("id", os.ticket_id);
-
-      if (error) {
-        // Mensagem de erro específica para permissão negada
-        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-          toast({
-            title: "Sem permissão para iniciar execução",
-            description: "Você não tem permissão para alterar o status deste ticket. Fale com o administrador.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-        return;
-      }
-
-      // Recarregar IMEDIATAMENTE após a atualização
-      await loadOrdensServico();
+      await updateStatusMutation.mutateAsync({
+        ticketId: os.ticket_id,
+        status: 'em_execucao',
+        extraData: { data_inicio_execucao: new Date().toISOString() },
+      });
 
       toast({
         title: "Execução iniciada!",
         description: "A OS foi movida para a aba 'Em Execução'. Agora você pode preencher o RME.",
       });
 
-      // Mudar para a aba "Em Execução" APÓS recarregar
       setActiveTab('execucao');
-    } catch (error: any) {
-      toast({
-        title: "Erro ao iniciar execução",
-        description: error.message,
-        variant: "destructive",
-      });
+    } catch {
+      // Error handled by mutation's onError
     } finally {
       setStartingId(null);
     }
   };
+
 
   const handlePreencherRME = async (os: OrdemServico) => {
     setNavigating(os.id);
