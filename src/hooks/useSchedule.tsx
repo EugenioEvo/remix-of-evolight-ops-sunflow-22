@@ -173,7 +173,7 @@ export const useSchedule = () => {
               .update({ email_error_log: errorLog })
               .eq('id', params.osId);
           } catch (logError) {
-            console.error('Erro ao registrar log:', logError);
+            logger.error('Erro ao registrar log:', logError);
           }
 
           toast({
