@@ -1,15 +1,15 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type {
-  PlantStatus,
-  EquipmentStatus,
-  WorkOrderStatus,
-  WorkOrderPriority,
-  AlertSeverity,
-  AlertStatus,
-  InspectionStatus,
-} from '@/integrations/sunflow/types';
+
+// Status types used across Sunflow pages
+export type PlantStatus = 'active' | 'inactive' | 'maintenance' | 'decommissioned';
+export type EquipmentStatus = 'operational' | 'degraded' | 'failed' | 'maintenance' | 'offline';
+export type WorkOrderStatus = 'open' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
+export type WorkOrderPriority = 'low' | 'medium' | 'high' | 'critical';
+export type AlertSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
+export type InspectionStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
 
 type BadgeContext =
   | { context: 'plant'; value: PlantStatus }
