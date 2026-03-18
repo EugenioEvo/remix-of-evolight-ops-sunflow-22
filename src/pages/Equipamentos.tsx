@@ -166,7 +166,7 @@ const Equipamentos = () => {
 
         if (error) {
           toast.error('Erro ao criar equipamento');
-          console.error('Error creating equipamento:', error);
+          logger.error('Error creating equipamento:', error);
           return;
         }
 
