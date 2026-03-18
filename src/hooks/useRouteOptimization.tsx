@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/services/api';
 import { optimizeRouteAdvanced } from '@/components/RouteOptimization';
 
 interface Ticket {
