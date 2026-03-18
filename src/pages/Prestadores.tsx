@@ -105,7 +105,7 @@ const Prestadores = () => {
 
       if (error) {
         toast.error('Erro ao carregar prestadores');
-        console.error('Error fetching prestadores:', error);
+        logger.error('Error fetching prestadores:', error);
         return;
       }
 
