@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/services/api';
+import { useQueryClient } from '@tanstack/react-query';
+import logger from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
+import { useTicketsQuery, useClientesQuery, usePrestadoresQuery, useCreateTicketMutation, useUpdateTicketMutation, useDeleteTicketMutation } from '@/hooks/useTicketsQuery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,15 +45,11 @@ const ticketSchema = z.object({
 type TicketForm = z.infer<typeof ticketSchema>;
 
 const Tickets = () => {
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [prestadores, setPrestadores] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState(localStorage.getItem('tickets_search') || '');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [activeTab, setActiveTab] = useState(localStorage.getItem('tickets_tab') || 'todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
   const [generatingOsId, setGeneratingOsId] = useState<string | null>(null);
   const [selectedCliente, setSelectedCliente] = useState(localStorage.getItem('tickets_cliente') || 'todos');
   const [selectedPrioridade, setSelectedPrioridade] = useState(localStorage.getItem('tickets_prioridade') || 'todas');
@@ -59,6 +57,24 @@ const Tickets = () => {
   const [reprocessingTicketId, setReprocessingTicketId] = useState<string | null>(null);
 
   const { geocodeAddress, loading: geocoding } = useGeocoding();
+
+  const queryClient = useQueryClient();
+
+  // React Query hooks
+  const { data: ticketsData, isLoading: ticketsLoading } = useTicketsQuery({
+    searchTerm: debouncedSearchTerm,
+  });
+  const { data: clientesData } = useClientesQuery();
+  const { data: prestadoresData } = usePrestadoresQuery();
+
+  const createTicketMutation = useCreateTicketMutation();
+  const updateTicketMutation = useUpdateTicketMutation();
+  const deleteTicketMutation = useDeleteTicketMutation();
+
+  const tickets = ticketsData?.tickets ?? [];
+  const clientes = clientesData ?? [];
+  const prestadores = prestadoresData ?? [];
+  const loading = ticketsLoading || createTicketMutation.isPending || updateTicketMutation.isPending || deleteTicketMutation.isPending;
 
   // Persistir filtros
   useEffect(() => {
@@ -70,9 +86,9 @@ const Tickets = () => {
   }, [searchTerm, activeTab, selectedCliente, selectedPrioridade, selectedUfvSolarz]);
 
   // Extrair opções únicas de UFV/SolarZ dos tickets
-  const ufvSolarzOptions = React.useMemo(() => {
+  const ufvSolarzOptions = useMemo(() => {
     const ufvSet = new Set<string>();
-    tickets.forEach(ticket => {
+    tickets.forEach((ticket: any) => {
       if (ticket.clientes?.ufv_solarz) {
         ufvSet.add(ticket.clientes.ufv_solarz);
       }
@@ -105,100 +121,28 @@ const Tickets = () => {
 
   const [ufvSolarzListForForm, setUfvSolarzListForForm] = useState<string[]>([]);
   const [selectedUfvSolarzForm, setSelectedUfvSolarzForm] = useState<string>('');
-  
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Carregar clientes com endereço completo, UFV/SolarZ e prioridade
-      const { data: clientesData } = await supabase
-        .from('clientes')
-        .select(`
-          id,
-          empresa,
-          endereco,
-          cidade,
-          estado,
-          cep,
-          cnpj_cpf,
-          ufv_solarz,
-          prioridade,
-          profiles(nome, email, telefone)
-        `);
-      setClientes(clientesData || []);
-      
-      // Extrair lista única de UFV/SolarZ para o formulário
-      const ufvList = (clientesData || [])
-        .map((c: any) => c.ufv_solarz)
-        .filter((ufv: string | null): ufv is string => ufv !== null && ufv.trim() !== '')
-        .filter((ufv: string, index: number, arr: string[]) => arr.indexOf(ufv) === index)
-        .sort((a: string, b: string) => a.localeCompare(b));
-      setUfvSolarzListForForm(ufvList);
 
-      // Carregar prestadores ativos com categoria técnico
-      const { data: prestadoresData } = await supabase
-        .from('prestadores')
-        .select('*')
-        .eq('categoria', 'tecnico')
-        .eq('ativo', true);
-      
-      setPrestadores(prestadoresData || []);
+  // Derive UFV list from clientes query data
+  useEffect(() => {
+    const ufvList = clientes
+      .map((c: any) => c.ufv_solarz)
+      .filter((ufv: string | null): ufv is string => ufv !== null && ufv.trim() !== '')
+      .filter((ufv: string, index: number, arr: string[]) => arr.indexOf(ufv) === index)
+      .sort((a: string, b: string) => a.localeCompare(b));
+    setUfvSolarzListForForm(ufvList);
+  }, [clientes]);
 
-      // Carregar tickets com informações do técnico atribuído
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
-        .select(`
-          *,
-          ordens_servico(numero_os, id, pdf_url),
-          clientes(
-            empresa,
-            endereco,
-            cidade,
-            estado,
-            cep,
-            ufv_solarz,
-            prioridade,
-            profiles(nome, email)
-          ),
-          prestadores:tecnico_responsavel_id(
-            id,
-            nome,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (ticketsError) {
-        logger.error('Erro ao carregar tickets:', ticketsError);
-        throw ticketsError;
-      }
-
-      setTickets(ticketsData || []);
-    } catch (error) {
-      logger.error('Erro ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar dados',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Realtime subscription - mover depois da definição de loadData
+  // Realtime subscription
   useTicketsRealtime({
-    onTicketChange: loadData
+    onTicketChange: invalidateAll
   });
 
   const onSubmit = async (data: TicketForm) => {
     try {
-      setLoading(true);
-
       // Definir técnico se selecionado, senão deixar null
       const tecnico_id = selectedTechnicianForTicket || null;
       
@@ -223,33 +167,13 @@ const Tickets = () => {
         created_by: user?.id,
         tecnico_responsavel_id: tecnico_id,
         anexos: attachments,
-        // Status: sempre inicia como aberto
         status: 'aberto',
       };
 
       if (editingTicket) {
-        const { error } = await supabase
-          .from('tickets')
-          .update(ticketData as any)
-          .eq('id', editingTicket.id);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Sucesso',
-          description: 'Ticket atualizado com sucesso!',
-        });
+        await updateTicketMutation.mutateAsync({ id: editingTicket.id, data: ticketData });
       } else {
-        const { error } = await supabase
-          .from('tickets')
-          .insert([ticketData as any]);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Sucesso',
-          description: 'Ticket criado aguardando aprovação!',
-        });
+        await createTicketMutation.mutateAsync(ticketData);
       }
 
       setIsDialogOpen(false);
@@ -257,16 +181,8 @@ const Tickets = () => {
       setSelectedTechnicianForTicket('');
       setAttachments([]);
       form.reset();
-      loadData();
     } catch (error: any) {
       logger.error('Erro ao salvar ticket:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao salvar ticket',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -304,7 +220,6 @@ const Tickets = () => {
         return;
       }
 
-      // Atribuir técnico ao ticket
       const { error } = await supabase
         .from('tickets')
         .update({ 
@@ -314,8 +229,6 @@ const Tickets = () => {
 
       if (error) throw error;
 
-      // Se já existe OS, atualizar o tecnico_id na OS também
-      // Buscar prestador para encontrar o técnico correspondente
       const { data: prestador } = await supabase
         .from('prestadores')
         .select('email')
@@ -342,7 +255,7 @@ const Tickets = () => {
         description: 'Técnico atribuído com sucesso.',
       });
 
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       logger.error('Erro ao atribuir técnico:', error);
       toast({
@@ -355,9 +268,6 @@ const Tickets = () => {
 
   const handleApprove = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      // Atualizar status do ticket
       const { error: updateError } = await supabase
         .from('tickets')
         .update({ status: 'aprovado' })
@@ -365,7 +275,6 @@ const Tickets = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar aprovação
       const { error: approvalError } = await supabase
         .from('aprovacoes')
         .insert({
@@ -382,25 +291,19 @@ const Tickets = () => {
         description: 'Ticket aprovado. Agora pode atribuir um técnico.',
       });
 
-      // Mudar para a aba de aprovados
       setActiveTab('aprovado');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao aprovar ticket',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleReject = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      // Atualizar status do ticket
       const { error: updateError } = await supabase
         .from('tickets')
         .update({ status: 'rejeitado' })
@@ -408,7 +311,6 @@ const Tickets = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar rejeição
       const { error: approvalError } = await supabase
         .from('aprovacoes')
         .insert({
@@ -425,17 +327,14 @@ const Tickets = () => {
         description: 'Ticket rejeitado',
       });
 
-      // Manter na mesma aba ou mostrar todos
       setActiveTab('todos');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao rejeitar ticket',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -460,7 +359,6 @@ const Tickets = () => {
           : 'Ordem de serviço gerada com sucesso!',
       });
 
-      // Abrir PDF em nova aba se disponível
       if (data?.pdfUrl) {
         window.open(data.pdfUrl, '_blank');
       } else {
@@ -470,9 +368,8 @@ const Tickets = () => {
         });
       }
 
-      // Mudar para a aba de OS gerada
       setActiveTab('ordem_servico_gerada');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -486,34 +383,14 @@ const Tickets = () => {
 
   const handleDeleteTicket = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from("tickets")
-        .delete()
-        .eq("id", ticketId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Ticket excluído com sucesso",
-      });
-
+      await deleteTicketMutation.mutateAsync(ticketId);
       setActiveTab('todos');
-      loadData();
     } catch (error: any) {
-      toast({
-        title: "Erro ao excluir ticket",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handled by mutation's onError
     }
   };
 
-  const filteredTickets = tickets.filter(ticket => {
+  const filteredTickets = tickets.filter((ticket: any) => {
     const clienteNome = ticket.clientes?.empresa || ticket.clientes?.profiles?.nome || '';
     const matchesSearch = ticket.titulo.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                          ticket.numero_ticket.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
@@ -620,7 +497,7 @@ const Tickets = () => {
           title: 'Sucesso',
           description: `Endereço geocodificado: ${result.latitude?.toFixed(5)}, ${result.longitude?.toFixed(5)}`,
         });
-        loadData();
+        invalidateAll();
       }
     } catch (error: any) {
       logger.error('Erro ao reprocessar geocodificação:', error);
