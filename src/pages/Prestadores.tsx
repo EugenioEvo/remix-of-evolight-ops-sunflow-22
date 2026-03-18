@@ -152,7 +152,7 @@ const Prestadores = () => {
 
         if (error) {
           toast.error('Erro ao criar prestador');
-          console.error('Error creating prestador:', error);
+          logger.error('Error creating prestador:', error);
           return;
         }
 
