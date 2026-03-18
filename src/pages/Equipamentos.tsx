@@ -94,7 +94,7 @@ const Equipamentos = () => {
 
       if (error) {
         toast.error('Erro ao carregar equipamentos');
-        console.error('Error fetching equipamentos:', error);
+        logger.error('Error fetching equipamentos:', error);
         return;
       }
 
