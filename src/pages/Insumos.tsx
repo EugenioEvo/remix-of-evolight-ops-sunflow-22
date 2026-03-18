@@ -261,7 +261,7 @@ export default function Insumos() {
       setResponsaveis((responsaveisData || []) as Responsavel[]);
       setMovimentacoes((movimentacoesData || []) as Movimentacao[]);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados. Verifique sua conexão.",
