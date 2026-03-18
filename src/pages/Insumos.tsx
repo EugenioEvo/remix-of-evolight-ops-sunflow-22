@@ -346,7 +346,7 @@ export default function Insumos() {
       setSelectedInsumo(null);
       movimentacaoForm.reset();
     } catch (error) {
-      console.error('Error saving movimentacao:', error);
+      logger.error('Error saving movimentacao:', error);
       toast({
         title: "Erro",
         description: "Erro ao registrar movimentação.",
