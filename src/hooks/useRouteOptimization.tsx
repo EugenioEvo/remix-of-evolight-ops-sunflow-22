@@ -119,7 +119,7 @@ export const useRouteOptimization = () => {
           provider = 'mapbox';
           logger.info(`[RouteOpt] ✅ Mapbox OK: ${data.route?.distanceKm} km`);
         } else if (mapboxResult.data?.error?.includes('MAPBOX_ACCESS_TOKEN')) {
-          console.warn('[RouteOpt] Token Mapbox não configurado');
+          logger.warn('[RouteOpt] Token Mapbox não configurado');
         } else {
           console.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
         }
