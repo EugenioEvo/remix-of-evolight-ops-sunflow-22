@@ -68,7 +68,7 @@ export const useNotifications = () => {
       setNotificacoes(data || []);
       setNaoLidas((data || []).filter(n => !n.lida).length);
     } catch (error) {
-      console.error('Erro ao carregar notificações:', error);
+      logger.error('Erro ao carregar notificações:', error);
     } finally {
       setLoading(false);
     }
