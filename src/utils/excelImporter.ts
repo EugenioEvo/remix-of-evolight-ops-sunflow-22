@@ -94,7 +94,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     
     return { data, headers, errors };
   } catch (error) {
-    console.error('Erro ao parsear arquivo:', error);
+    logger.error('Erro ao parsear arquivo:', error);
     return { 
       data: [], 
       headers: [], 
