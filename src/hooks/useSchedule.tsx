@@ -147,7 +147,7 @@ export const useSchedule = () => {
             description: `OS ${isUpdate ? 'reagendada' : 'agendada'} para ${format(params.data, 'dd/MM/yyyy')} às ${params.horaInicio}. Convites enviados!`
           });
         } catch (emailError: any) {
-          console.error('Erro ao enviar convite:', emailError);
+          logger.error('Erro ao enviar convite:', emailError);
           // Registrar erro no log da OS
           try {
             const { data: currentOS } = await supabase
