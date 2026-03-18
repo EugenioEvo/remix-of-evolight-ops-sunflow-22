@@ -169,7 +169,7 @@ const Tickets = () => {
         .order('created_at', { ascending: false });
 
       if (ticketsError) {
-        console.error('Erro ao carregar tickets:', ticketsError);
+        logger.error('Erro ao carregar tickets:', ticketsError);
         throw ticketsError;
       }
 
