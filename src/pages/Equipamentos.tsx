@@ -101,7 +101,7 @@ const Equipamentos = () => {
       setEquipamentos(data || []);
     } catch (error) {
       toast.error('Erro ao carregar equipamentos');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
