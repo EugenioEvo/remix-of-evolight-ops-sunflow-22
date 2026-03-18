@@ -310,7 +310,7 @@ const RME = () => {
       // Voltar para Minhas OS
       navigate('/minhas-os');
     } catch (error: any) {
-      console.error('Erro ao salvar RME:', error);
+      logger.error('Erro ao salvar RME:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao salvar RME',
