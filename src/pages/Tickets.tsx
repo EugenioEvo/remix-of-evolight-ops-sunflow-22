@@ -259,7 +259,7 @@ const Tickets = () => {
       form.reset();
       loadData();
     } catch (error: any) {
-      console.error('Erro ao salvar ticket:', error);
+      logger.error('Erro ao salvar ticket:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao salvar ticket',
