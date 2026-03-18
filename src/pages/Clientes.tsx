@@ -193,7 +193,7 @@ export default function Clientes() {
       form.reset();
       fetchClientes();
     } catch (error: any) {
-      console.error('Erro ao salvar cliente:', error);
+      logger.error('Erro ao salvar cliente:', error);
       const errorMessage = error?.message || 'Erro desconhecido';
       const errorCode = error?.code || '';
       toast.error(`Erro ao salvar cliente: ${errorMessage} ${errorCode ? `(${errorCode})` : ''}`);
