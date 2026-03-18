@@ -497,7 +497,7 @@ const Tickets = () => {
           title: 'Sucesso',
           description: `Endereço geocodificado: ${result.latitude?.toFixed(5)}, ${result.longitude?.toFixed(5)}`,
         });
-        loadData();
+        invalidateAll();
       }
     } catch (error: any) {
       logger.error('Erro ao reprocessar geocodificação:', error);
