@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 import { useAuth } from "@/hooks/useAuth";
 import { useTicketsRealtime } from "@/hooks/useTicketsRealtime";
 import { Button } from "@/components/ui/button";
