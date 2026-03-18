@@ -230,7 +230,7 @@ export default function Clientes() {
       toast.success('Cliente removido com sucesso!');
       fetchClientes(); // Recarregar lista
     } catch (error) {
-      console.error('Erro ao remover cliente:', error);
+      logger.error('Erro ao remover cliente:', error);
       toast.error('Erro ao remover cliente');
     }
   };
