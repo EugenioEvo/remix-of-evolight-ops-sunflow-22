@@ -78,7 +78,7 @@ export const useConflictCheck = () => {
 
       return { hasConflict: false, conflicts: [] };
     } catch (error) {
-      console.error('Erro ao verificar conflito:', error);
+      logger.error('Erro ao verificar conflito:', error);
       return { hasConflict: false, conflicts: [] };
     } finally {
       setLoading(false);
