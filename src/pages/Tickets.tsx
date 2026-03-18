@@ -1393,7 +1393,7 @@ const Tickets = () => {
                                       }
                                     }
                                   } catch (error) {
-                                    console.error('Erro ao abrir OS:', error);
+                                    logger.error('Erro ao abrir OS:', error);
                                   }
                                 }}
                               >

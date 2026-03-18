@@ -46,7 +46,7 @@ const VisualizarOS = () => {
       setOS(osData);
       setTicket(osData.tickets);
     } catch (error: any) {
-      console.error('Erro ao carregar OS:', error);
+      logger.error('Erro ao carregar OS:', error);
       toast.error('Erro ao carregar Ordem de Serviço');
       navigate('/tickets');
     } finally {

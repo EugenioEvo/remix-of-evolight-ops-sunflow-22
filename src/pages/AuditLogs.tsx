@@ -65,7 +65,7 @@ const AuditLogs = () => {
 
       setLogs((data || []) as AuditLog[]);
     } catch (error: any) {
-      console.error('Erro ao carregar logs:', error);
+      logger.error('Erro ao carregar logs:', error);
     } finally {
       setLoading(false);
     }

@@ -604,7 +604,7 @@ const RME = () => {
         description: 'O relatório foi exportado com sucesso!',
       });
     } catch (error: any) {
-      console.error('Erro ao exportar PDF:', error);
+      logger.error('Erro ao exportar PDF:', error);
       toast({
         title: 'Erro ao exportar',
         description: error.message || 'Não foi possível gerar o PDF.',

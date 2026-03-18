@@ -214,7 +214,7 @@ const WorkOrderCreate = () => {
 
       navigate(`/work-orders/${osData.id}`);
     } catch (error: any) {
-      console.error("Erro ao criar OS:", error);
+      logger.error("Erro ao criar OS:", error);
       toast({
         title: "Erro ao criar OS",
         description: error.message,

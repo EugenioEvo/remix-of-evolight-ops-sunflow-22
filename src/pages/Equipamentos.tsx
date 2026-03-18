@@ -206,7 +206,7 @@ const Equipamentos = () => {
       fetchEquipamentos();
     } catch (error) {
       toast.error('Erro ao remover equipamento');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 

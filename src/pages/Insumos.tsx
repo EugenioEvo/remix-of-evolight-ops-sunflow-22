@@ -413,7 +413,7 @@ export default function Insumos() {
       
       loadData();
     } catch (error) {
-      console.error('Error deleting insumo:', error);
+      logger.error('Error deleting insumo:', error);
       toast({
         title: "Erro",
         description: "Erro ao excluir insumo.",

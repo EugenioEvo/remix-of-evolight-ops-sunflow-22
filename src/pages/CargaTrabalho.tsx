@@ -270,7 +270,7 @@ const CargaTrabalho = () => {
         description: `Relatório salvo como ${fileName}`
       });
     } catch (error: any) {
-      console.error('Erro ao exportar PDF:', error);
+      logger.error('Erro ao exportar PDF:', error);
       toast({
         title: 'Erro ao exportar',
         description: 'Não foi possível gerar o PDF',
