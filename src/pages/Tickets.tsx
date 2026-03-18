@@ -220,7 +220,6 @@ const Tickets = () => {
         return;
       }
 
-      // Atribuir técnico ao ticket
       const { error } = await supabase
         .from('tickets')
         .update({ 
@@ -230,8 +229,6 @@ const Tickets = () => {
 
       if (error) throw error;
 
-      // Se já existe OS, atualizar o tecnico_id na OS também
-      // Buscar prestador para encontrar o técnico correspondente
       const { data: prestador } = await supabase
         .from('prestadores')
         .select('email')
@@ -258,7 +255,7 @@ const Tickets = () => {
         description: 'Técnico atribuído com sucesso.',
       });
 
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       logger.error('Erro ao atribuir técnico:', error);
       toast({
@@ -271,9 +268,6 @@ const Tickets = () => {
 
   const handleApprove = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      // Atualizar status do ticket
       const { error: updateError } = await supabase
         .from('tickets')
         .update({ status: 'aprovado' })
@@ -281,7 +275,6 @@ const Tickets = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar aprovação
       const { error: approvalError } = await supabase
         .from('aprovacoes')
         .insert({
@@ -298,25 +291,19 @@ const Tickets = () => {
         description: 'Ticket aprovado. Agora pode atribuir um técnico.',
       });
 
-      // Mudar para a aba de aprovados
       setActiveTab('aprovado');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao aprovar ticket',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleReject = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      // Atualizar status do ticket
       const { error: updateError } = await supabase
         .from('tickets')
         .update({ status: 'rejeitado' })
@@ -324,7 +311,6 @@ const Tickets = () => {
 
       if (updateError) throw updateError;
 
-      // Registrar rejeição
       const { error: approvalError } = await supabase
         .from('aprovacoes')
         .insert({
@@ -341,17 +327,14 @@ const Tickets = () => {
         description: 'Ticket rejeitado',
       });
 
-      // Manter na mesma aba ou mostrar todos
       setActiveTab('todos');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao rejeitar ticket',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -376,7 +359,6 @@ const Tickets = () => {
           : 'Ordem de serviço gerada com sucesso!',
       });
 
-      // Abrir PDF em nova aba se disponível
       if (data?.pdfUrl) {
         window.open(data.pdfUrl, '_blank');
       } else {
@@ -386,9 +368,8 @@ const Tickets = () => {
         });
       }
 
-      // Mudar para a aba de OS gerada
       setActiveTab('ordem_servico_gerada');
-      loadData();
+      invalidateAll();
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -402,34 +383,12 @@ const Tickets = () => {
 
   const handleDeleteTicket = async (ticketId: string) => {
     try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from("tickets")
-        .delete()
-        .eq("id", ticketId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Ticket excluído com sucesso",
-      });
-
+      await deleteTicketMutation.mutateAsync(ticketId);
       setActiveTab('todos');
-      loadData();
     } catch (error: any) {
-      toast({
-        title: "Erro ao excluir ticket",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      // Error handled by mutation's onError
     }
   };
-
-  const filteredTickets = tickets.filter(ticket => {
     const clienteNome = ticket.clientes?.empresa || ticket.clientes?.profiles?.nome || '';
     const matchesSearch = ticket.titulo.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                          ticket.numero_ticket.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
