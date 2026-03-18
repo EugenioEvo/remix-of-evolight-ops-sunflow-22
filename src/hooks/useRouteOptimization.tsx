@@ -222,7 +222,7 @@ export const useRouteOptimization = () => {
       };
 
     } catch (err) {
-      console.error('[RouteOpt] Erro geral:', err);
+      logger.error('[RouteOpt] Erro geral:', err);
       toast.error('Erro ao otimizar rota, usando método local');
       
       const localOptimized = optimizeRouteAdvanced(tickets);

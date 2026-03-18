@@ -70,7 +70,7 @@ export const useCancelOS = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao cancelar OS:', error);
+      logger.error('Erro ao cancelar OS:', error);
       toast({
         title: 'Erro ao cancelar',
         description: error.message,

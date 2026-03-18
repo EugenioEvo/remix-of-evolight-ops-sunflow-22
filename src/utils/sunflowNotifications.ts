@@ -191,7 +191,7 @@ export async function sendEmail(payload: EmailPayload): Promise<void> {
   // Option C – Supabase Edge Function:
   //   await supabase.functions.invoke('send-email', { body: payload });
 
-  console.log('[sunflowNotifications] sendEmail:', payload.subject, '→', payload.to);
+  // logger.info('[sunflowNotifications] sendEmail:', payload.subject, '→', payload.to);
 }
 
 export async function notifyAlert(
