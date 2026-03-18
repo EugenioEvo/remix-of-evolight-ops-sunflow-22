@@ -133,7 +133,7 @@ const Prestadores = () => {
 
         if (error) {
           toast.error('Erro ao atualizar prestador');
-          console.error('Error updating prestador:', error);
+          logger.error('Error updating prestador:', error);
           return;
         }
 
