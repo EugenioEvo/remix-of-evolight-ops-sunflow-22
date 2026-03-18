@@ -149,7 +149,7 @@ export class SolarService {
         severidade: alert.severity,
         titulo: alert.title,
         descricao: alert.description ?? null,
-        dados_contexto: (alert.contextData as Record<string, unknown>) ?? null,
+        dados_contexto: (alert.contextData ?? null) as any,
         status: 'aberto',
       }]);
 
