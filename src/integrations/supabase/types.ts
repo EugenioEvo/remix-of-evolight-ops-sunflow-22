@@ -1395,6 +1395,7 @@ export type Database = {
           longitude: number | null
           numero_ticket: string
           observacoes: string | null
+          origem: string | null
           prioridade: Database["public"]["Enums"]["prioridade_tipo"]
           status: Database["public"]["Enums"]["ticket_status"]
           tecnico_responsavel_id: string | null
@@ -1424,6 +1425,7 @@ export type Database = {
           longitude?: number | null
           numero_ticket: string
           observacoes?: string | null
+          origem?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_tipo"]
           status?: Database["public"]["Enums"]["ticket_status"]
           tecnico_responsavel_id?: string | null
@@ -1453,6 +1455,7 @@ export type Database = {
           longitude?: number | null
           numero_ticket?: string
           observacoes?: string | null
+          origem?: string | null
           prioridade?: Database["public"]["Enums"]["prioridade_tipo"]
           status?: Database["public"]["Enums"]["ticket_status"]
           tecnico_responsavel_id?: string | null
