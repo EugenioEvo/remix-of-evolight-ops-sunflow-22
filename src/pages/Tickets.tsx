@@ -389,6 +389,8 @@ const Tickets = () => {
       // Error handled by mutation's onError
     }
   };
+
+  const filteredTickets = tickets.filter((ticket: any) => {
     const clienteNome = ticket.clientes?.empresa || ticket.clientes?.profiles?.nome || '';
     const matchesSearch = ticket.titulo.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
                          ticket.numero_ticket.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
