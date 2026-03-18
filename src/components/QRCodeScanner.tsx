@@ -64,7 +64,7 @@ export const QRCodeScanner = ({ onScanSuccess, onClose }: QRCodeScannerProps) =>
         }
       );
     } catch (err: any) {
-      console.error('Erro ao iniciar scanner:', err);
+      logger.error('Erro ao iniciar scanner:', err);
       
       let errorMessage = 'Não foi possível acessar a câmera.';
       if (err.name === 'NotAllowedError') {
