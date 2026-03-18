@@ -623,7 +623,7 @@ const Tickets = () => {
         loadData();
       }
     } catch (error: any) {
-      console.error('Erro ao reprocessar geocodificação:', error);
+      logger.error('Erro ao reprocessar geocodificação:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao geocodificar endereço',
