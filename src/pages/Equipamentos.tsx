@@ -127,7 +127,7 @@ const Equipamentos = () => {
 
       setClientes(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
