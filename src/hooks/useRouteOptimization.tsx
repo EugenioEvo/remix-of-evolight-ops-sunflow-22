@@ -81,7 +81,7 @@ export const useRouteOptimization = () => {
     
     try {
       const totalWaypoints = validTickets.length + 1;
-      console.log(`[RouteOpt] Iniciando otimização: ${validTickets.length} tickets válidos de ${tickets.length} total`);
+      logger.info(`[RouteOpt] Iniciando otimização: ${validTickets.length} tickets válidos de ${tickets.length} total`);
 
       const coordinates = [
         {
