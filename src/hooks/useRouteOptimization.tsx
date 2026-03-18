@@ -154,7 +154,7 @@ export const useRouteOptimization = () => {
 
       // Se APIs falharam, usar algoritmo local
       if (!data?.success) {
-        console.log('[RouteOpt] Usando algoritmo local (APIs indisponíveis)');
+        logger.info('[RouteOpt] Usando algoritmo local (APIs indisponíveis)');
         toast.warning('Usando otimização local (APIs indisponíveis)');
         
         const localOptimized = optimizeRouteAdvanced(tickets);
