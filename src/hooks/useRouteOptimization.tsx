@@ -124,7 +124,7 @@ export const useRouteOptimization = () => {
           logger.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
         }
       } catch (err) {
-        console.warn('[RouteOpt] Mapbox exception:', err);
+        logger.warn('[RouteOpt] Mapbox exception:', err);
       }
 
       // Se Mapbox não funcionou, tentar OSRM
