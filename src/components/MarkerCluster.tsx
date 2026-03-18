@@ -26,7 +26,7 @@ const MarkerCluster: React.FC<MarkerClusterProps> = ({ markers, disableClusterin
 
     // Check if markerClusterGroup is available
     if (typeof (L as any).markerClusterGroup !== 'function') {
-      console.warn('MarkerCluster: L.markerClusterGroup is not available');
+      return;
       return;
     }
 
@@ -112,7 +112,7 @@ const MarkerCluster: React.FC<MarkerClusterProps> = ({ markers, disableClusterin
       clusterGroupRef.current = clusterGroup;
       map.addLayer(clusterGroup);
     } catch (error) {
-      console.error('MarkerCluster: Error creating cluster group', error);
+      console.error('MarkerCluster error:', error);
     }
 
     // Cleanup on unmount

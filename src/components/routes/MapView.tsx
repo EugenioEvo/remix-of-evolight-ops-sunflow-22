@@ -105,7 +105,7 @@ const MapViewComponent: React.FC<MapViewProps> = ({
         mapRef.current = map;
         setIsLoading(false);
       } catch (err) {
-        console.error('Erro ao inicializar mapa:', err);
+        console.error('Map init error:', err);
         if (isMounted) {
           setHasError(true);
           setErrorMessage(err instanceof Error ? err.message : 'Erro desconhecido');

@@ -5,6 +5,7 @@ import { TrendingUp, Activity } from "lucide-react";
 import { useTicketsRealtime } from "@/hooks/useTicketsRealtime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';

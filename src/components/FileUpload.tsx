@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -89,7 +90,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         description: `${uploadedPaths.length} arquivo(s) enviado(s)`,
       });
     } catch (error: any) {
-      console.error('Erro ao fazer upload:', error);
+      logger.error('Erro ao fazer upload:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao fazer upload',

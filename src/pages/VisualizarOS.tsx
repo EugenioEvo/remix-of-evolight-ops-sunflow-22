@@ -87,7 +87,7 @@ const VisualizarOS = () => {
 
       toast.success('PDF gerado com sucesso!');
     } catch (error: any) {
-      console.error('Erro ao gerar PDF:', error);
+      logger.error('Erro ao gerar PDF:', error);
       toast.error('Erro ao gerar PDF');
     } finally {
       setGenerating(false);

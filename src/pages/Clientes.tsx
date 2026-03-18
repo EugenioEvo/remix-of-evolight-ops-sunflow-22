@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { BulkImportDialog } from '@/components/BulkImportDialog';
 
@@ -107,7 +108,7 @@ export default function Clientes() {
 
       setClientes(clientesFormatted);
     } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      logger.error('Erro ao carregar clientes:', error);
       toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
@@ -192,7 +193,7 @@ export default function Clientes() {
       form.reset();
       fetchClientes();
     } catch (error: any) {
-      console.error('Erro ao salvar cliente:', error);
+      logger.error('Erro ao salvar cliente:', error);
       const errorMessage = error?.message || 'Erro desconhecido';
       const errorCode = error?.code || '';
       toast.error(`Erro ao salvar cliente: ${errorMessage} ${errorCode ? `(${errorCode})` : ''}`);
@@ -229,7 +230,7 @@ export default function Clientes() {
       toast.success('Cliente removido com sucesso!');
       fetchClientes(); // Recarregar lista
     } catch (error) {
-      console.error('Erro ao remover cliente:', error);
+      logger.error('Erro ao remover cliente:', error);
       toast.error('Erro ao remover cliente');
     }
   };

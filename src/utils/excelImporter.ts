@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { logger } from '@/services/api';
 
 export interface ParsedRow {
   [key: string]: string | number | null;
@@ -93,7 +94,7 @@ export async function parseExcelFile(file: File): Promise<ParseResult> {
     
     return { data, headers, errors };
   } catch (error) {
-    console.error('Erro ao parsear arquivo:', error);
+    logger.error('Erro ao parsear arquivo:', error);
     return { 
       data: [], 
       headers: [], 

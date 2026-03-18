@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -78,7 +79,7 @@ export const GerarOSDialog = ({ open, onOpenChange, ticketId, onSuccess }: Gerar
       if (onSuccess) onSuccess();
 
     } catch (error: any) {
-      console.error('Erro ao gerar OS:', error);
+      logger.error('Erro ao gerar OS:', error);
       toast.error(error.message || 'Erro ao gerar Ordem de Serviço');
     } finally {
       setLoading(false);

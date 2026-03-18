@@ -184,7 +184,7 @@ const Prestadores = () => {
 
       if (error) {
         toast.error('Erro ao remover prestador');
-        console.error('Error deleting prestador:', error);
+        logger.error('Error deleting prestador:', error);
         return;
       }
 
@@ -192,7 +192,7 @@ const Prestadores = () => {
       fetchPrestadores();
     } catch (error) {
       toast.error('Erro ao remover prestador');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
