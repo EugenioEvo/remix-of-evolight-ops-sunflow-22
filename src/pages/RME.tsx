@@ -503,7 +503,7 @@ const RME = () => {
         setShowQuickAdd(true);
       }
     } catch (error: any) {
-      console.error('Erro ao processar QR Code:', error);
+      logger.error('Erro ao processar QR Code:', error);
       toast({
         title: 'Erro ao processar QR Code',
         description: error.message || 'Não foi possível processar o código escaneado.',
