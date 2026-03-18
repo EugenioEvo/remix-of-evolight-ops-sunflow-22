@@ -118,7 +118,7 @@ const RME = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao carregar OS:', error);
+        logger.error('Erro ao carregar OS:', error);
         toast({
           title: 'Erro ao carregar OS',
           description: 'Não foi possível carregar a OS. Tente novamente.',
