@@ -45,7 +45,7 @@ export const useCancelOS = () => {
             }
           });
         } catch (emailError) {
-          console.error('Erro ao enviar cancelamento:', emailError);
+          logger.error('Erro ao enviar cancelamento:', emailError);
           // Não bloquear o cancelamento se email falhar
         }
       }
