@@ -1327,7 +1327,7 @@ const Tickets = () => {
                                       });
                                     }
                                   } catch (error: any) {
-                                    console.error('Erro ao abrir OS:', error);
+                                    logger.error('Erro ao abrir OS:', error);
                                     toast({
                                       title: 'Erro',
                                       description: 'Erro ao abrir OS: ' + error.message,
