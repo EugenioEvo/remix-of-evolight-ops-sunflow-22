@@ -31,7 +31,7 @@ export const useRMEApprovals = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao aprovar RME:', error);
+      logger.error('Erro ao aprovar RME:', error);
       toast({
         title: 'Erro ao aprovar',
         description: error.message,
