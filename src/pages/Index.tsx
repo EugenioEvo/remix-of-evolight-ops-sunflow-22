@@ -5,9 +5,10 @@ import { TrendingUp, Activity } from "lucide-react";
 import { useTicketsRealtime } from "@/hooks/useTicketsRealtime";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { logger } from '@/services/api';
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useRecentActivity, dashboardKeys } from "@/hooks/queries/useDashboard";
+import { useQueryClient } from "@tanstack/react-query";
 import { LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format as formatDate } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,7 +30,6 @@ const PerformanceMetrics = () => {
     const startDate = startOfMonth(now);
     const endDate = endOfMonth(now);
 
-    // Tickets resolvidos por dia no mês
     const { data: tickets } = await supabase
       .from('tickets')
       .select('created_at, data_conclusao, status')
@@ -45,7 +45,6 @@ const PerformanceMetrics = () => {
       return { dia: dayStr, resolvidos: count };
     });
 
-    // SLA (tickets concluídos vs total)
     const total = tickets?.length || 0;
     const concluidos = tickets?.filter(t => t.status === 'concluido').length || 0;
     const slaData = [
@@ -53,18 +52,17 @@ const PerformanceMetrics = () => {
       { name: 'Pendentes', value: total - concluidos, color: '#f59e0b' }
     ];
 
-    // Tempo médio de resolução (simplificado)
     const temposResolucao = tickets?.filter(t => t.data_conclusao && t.created_at).map(t => {
       const criado = new Date(t.created_at);
       const concluido = new Date(t.data_conclusao);
-      return (concluido.getTime() - criado.getTime()) / (1000 * 60 * 60 * 24); // dias
+      return (concluido.getTime() - criado.getTime()) / (1000 * 60 * 60 * 24);
     }) || [];
     const tempoMedio = temposResolucao.length > 0
       ? temposResolucao.reduce((a, b) => a + b, 0) / temposResolucao.length
       : 0;
 
     setMetricsData({
-      ticketsPorMes: ticketsPorDia.slice(-7), // últimos 7 dias
+      ticketsPorMes: ticketsPorDia.slice(-7),
       slaData,
       tempoMedio: Math.round(tempoMedio * 10) / 10
     });
@@ -72,13 +70,11 @@ const PerformanceMetrics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Tempo Médio */}
       <div className="text-center p-4 bg-muted/50 rounded-lg">
         <p className="text-sm text-muted-foreground mb-1">Tempo Médio de Resolução</p>
         <p className="text-3xl font-bold text-primary">{metricsData.tempoMedio} dias</p>
       </div>
 
-      {/* Taxa de SLA */}
       <div>
         <p className="text-sm font-medium mb-3">Taxa de Conclusão</p>
         <ResponsiveContainer width="100%" height={180}>
@@ -102,7 +98,6 @@ const PerformanceMetrics = () => {
         </ResponsiveContainer>
       </div>
 
-      {/* Tickets Resolvidos */}
       <div>
         <p className="text-sm font-medium mb-3">Tickets Resolvidos (Últimos 7 dias)</p>
         <ResponsiveContainer width="100%" height={150}>
@@ -121,30 +116,16 @@ const PerformanceMetrics = () => {
 
 
 const Index = () => {
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const { data: recentActivity = [] } = useRecentActivity();
   const { profile } = useAuth();
   const navigate = useNavigate();
-  
-  const loadRecentActivity = async () => {
-    const { data } = await supabase
-      .from('status_historico')
-      .select(`
-        *,
-        tickets(numero_ticket, titulo),
-        profiles:alterado_por(nome)
-      `)
-      .order('data_alteracao', { ascending: false })
-      .limit(5);
-    
-    setRecentActivity(data || []);
-  };
-
-  useEffect(() => {
-    loadRecentActivity();
-  }, []);
+  const queryClient = useQueryClient();
 
   useTicketsRealtime({
-    onTicketChange: loadRecentActivity
+    onTicketChange: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.recentActivity });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.stats });
+    }
   });
 
   const getStatusLabel = (status: string) => {
@@ -161,14 +142,12 @@ const Index = () => {
     return labels[status] || status;
   };
 
-  // Redirecionar clientes para seu dashboard
   useEffect(() => {
     if (profile?.role === 'cliente') {
       navigate('/meu-painel');
     }
   }, [profile, navigate]);
 
-  // Se for técnico, mostrar dashboard específico
   if (profile?.role === 'tecnico_campo') {
     return <TechnicianDashboard />;
   }
@@ -201,7 +180,7 @@ const Index = () => {
               {recentActivity.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Nenhuma atividade recente</p>
               ) : (
-                recentActivity.map((activity) => (
+                recentActivity.map((activity: any) => (
                   <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
                     <div className="flex-1">
                       <p className="text-sm font-medium">
