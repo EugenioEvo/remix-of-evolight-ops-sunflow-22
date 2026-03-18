@@ -45,15 +45,11 @@ const ticketSchema = z.object({
 type TicketForm = z.infer<typeof ticketSchema>;
 
 const Tickets = () => {
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [prestadores, setPrestadores] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState(localStorage.getItem('tickets_search') || '');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [activeTab, setActiveTab] = useState(localStorage.getItem('tickets_tab') || 'todos');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTicket, setEditingTicket] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
   const [generatingOsId, setGeneratingOsId] = useState<string | null>(null);
   const [selectedCliente, setSelectedCliente] = useState(localStorage.getItem('tickets_cliente') || 'todos');
   const [selectedPrioridade, setSelectedPrioridade] = useState(localStorage.getItem('tickets_prioridade') || 'todas');
@@ -61,6 +57,24 @@ const Tickets = () => {
   const [reprocessingTicketId, setReprocessingTicketId] = useState<string | null>(null);
 
   const { geocodeAddress, loading: geocoding } = useGeocoding();
+
+  const queryClient = useQueryClient();
+
+  // React Query hooks
+  const { data: ticketsData, isLoading: ticketsLoading } = useTicketsQuery({
+    searchTerm: debouncedSearchTerm,
+  });
+  const { data: clientesData } = useClientesQuery();
+  const { data: prestadoresData } = usePrestadoresQuery();
+
+  const createTicketMutation = useCreateTicketMutation();
+  const updateTicketMutation = useUpdateTicketMutation();
+  const deleteTicketMutation = useDeleteTicketMutation();
+
+  const tickets = ticketsData?.tickets ?? [];
+  const clientes = clientesData ?? [];
+  const prestadores = prestadoresData ?? [];
+  const loading = ticketsLoading || createTicketMutation.isPending || updateTicketMutation.isPending || deleteTicketMutation.isPending;
 
   // Persistir filtros
   useEffect(() => {
@@ -72,9 +86,9 @@ const Tickets = () => {
   }, [searchTerm, activeTab, selectedCliente, selectedPrioridade, selectedUfvSolarz]);
 
   // Extrair opções únicas de UFV/SolarZ dos tickets
-  const ufvSolarzOptions = React.useMemo(() => {
+  const ufvSolarzOptions = useMemo(() => {
     const ufvSet = new Set<string>();
-    tickets.forEach(ticket => {
+    tickets.forEach((ticket: any) => {
       if (ticket.clientes?.ufv_solarz) {
         ufvSet.add(ticket.clientes.ufv_solarz);
       }
@@ -107,94 +121,24 @@ const Tickets = () => {
 
   const [ufvSolarzListForForm, setUfvSolarzListForForm] = useState<string[]>([]);
   const [selectedUfvSolarzForm, setSelectedUfvSolarzForm] = useState<string>('');
-  
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // Carregar clientes com endereço completo, UFV/SolarZ e prioridade
-      const { data: clientesData } = await supabase
-        .from('clientes')
-        .select(`
-          id,
-          empresa,
-          endereco,
-          cidade,
-          estado,
-          cep,
-          cnpj_cpf,
-          ufv_solarz,
-          prioridade,
-          profiles(nome, email, telefone)
-        `);
-      setClientes(clientesData || []);
-      
-      // Extrair lista única de UFV/SolarZ para o formulário
-      const ufvList = (clientesData || [])
-        .map((c: any) => c.ufv_solarz)
-        .filter((ufv: string | null): ufv is string => ufv !== null && ufv.trim() !== '')
-        .filter((ufv: string, index: number, arr: string[]) => arr.indexOf(ufv) === index)
-        .sort((a: string, b: string) => a.localeCompare(b));
-      setUfvSolarzListForForm(ufvList);
 
-      // Carregar prestadores ativos com categoria técnico
-      const { data: prestadoresData } = await supabase
-        .from('prestadores')
-        .select('*')
-        .eq('categoria', 'tecnico')
-        .eq('ativo', true);
-      
-      setPrestadores(prestadoresData || []);
+  // Derive UFV list from clientes query data
+  useEffect(() => {
+    const ufvList = clientes
+      .map((c: any) => c.ufv_solarz)
+      .filter((ufv: string | null): ufv is string => ufv !== null && ufv.trim() !== '')
+      .filter((ufv: string, index: number, arr: string[]) => arr.indexOf(ufv) === index)
+      .sort((a: string, b: string) => a.localeCompare(b));
+    setUfvSolarzListForForm(ufvList);
+  }, [clientes]);
 
-      // Carregar tickets com informações do técnico atribuído
-      const { data: ticketsData, error: ticketsError } = await supabase
-        .from('tickets')
-        .select(`
-          *,
-          ordens_servico(numero_os, id, pdf_url),
-          clientes(
-            empresa,
-            endereco,
-            cidade,
-            estado,
-            cep,
-            ufv_solarz,
-            prioridade,
-            profiles(nome, email)
-          ),
-          prestadores:tecnico_responsavel_id(
-            id,
-            nome,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (ticketsError) {
-        logger.error('Erro ao carregar tickets:', ticketsError);
-        throw ticketsError;
-      }
-
-      setTickets(ticketsData || []);
-    } catch (error) {
-      logger.error('Erro ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar dados',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['tickets'] });
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Realtime subscription - mover depois da definição de loadData
+  // Realtime subscription
   useTicketsRealtime({
-    onTicketChange: loadData
+    onTicketChange: invalidateAll
   });
 
   const onSubmit = async (data: TicketForm) => {
