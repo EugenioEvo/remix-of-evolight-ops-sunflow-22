@@ -1,5 +1,9 @@
 import { PostgrestError } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import logger from '@/lib/logger';
 import { toast } from 'sonner';
+
+// ===== Error Handling =====
 
 export class ApiError extends Error {
   constructor(
@@ -21,8 +25,11 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 export function handleSupabaseError(error: PostgrestError): never {
   const message = ERROR_MESSAGES[error.code] || error.message;
+  logger.error('Supabase error', { code: error.code, message: error.message, details: error.details });
   throw new ApiError(message, error.code, error.details);
 }
+
+// ===== Query Helpers =====
 
 export async function fetchData<T>(
   queryPromise: PromiseLike<{ data: T | null; error: PostgrestError | null }>
@@ -48,18 +55,58 @@ export async function mutateData<T>(
   return data;
 }
 
-// Logger que só funciona em desenvolvimento
-export const logger = {
-  info: (...args: unknown[]) => {
-    if (import.meta.env.DEV) console.log('[INFO]', ...args);
-  },
-  warn: (...args: unknown[]) => {
-    if (import.meta.env.DEV) console.warn('[WARN]', ...args);
-  },
-  error: (...args: unknown[]) => {
-    console.error('[ERROR]', ...args);
-  },
-  debug: (...args: unknown[]) => {
-    if (import.meta.env.DEV) console.debug('[DEBUG]', ...args);
-  },
-};
+// ===== Paginated Query =====
+
+export interface PaginationOptions {
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedResult<T> {
+  data: T[];
+  totalCount: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}
+
+type SupabaseTable = 'tickets' | 'ordens_servico' | 'clientes' | 'prestadores' | 'rme_relatorios' | 'equipamentos' | 'insumos';
+
+export async function paginatedQuery<T>(
+  table: SupabaseTable,
+  options: PaginationOptions & {
+    select?: string;
+    orderBy?: string;
+    ascending?: boolean;
+    filters?: (query: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>;
+  } = {}
+): Promise<PaginatedResult<T>> {
+  const { page = 1, pageSize = 20, select = '*', orderBy = 'created_at', ascending = false, filters } = options;
+
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from(table)
+    .select(select, { count: 'exact' })
+    .order(orderBy, { ascending })
+    .range(from, to);
+
+  if (filters) {
+    query = filters(query) as typeof query;
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) handleSupabaseError(error);
+
+  const totalCount = count ?? 0;
+
+  return {
+    data: (data as T[]) ?? [],
+    totalCount,
+    totalPages: Math.ceil(totalCount / pageSize),
+    currentPage: page,
+    pageSize,
+  };
+}
