@@ -25,7 +25,7 @@ const DashboardStats = () => {
       const { data, error } = await supabase.rpc('get_dashboard_stats');
 
       if (error) {
-        console.error('Erro ao carregar estatísticas:', error);
+        logger.error('Erro ao carregar estatísticas:', error);
         return;
       }
 
