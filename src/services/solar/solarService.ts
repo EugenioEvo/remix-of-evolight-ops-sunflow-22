@@ -143,7 +143,7 @@ export class SolarService {
         continue;
       }
 
-      const { error } = await supabase.from('solar_alerts').insert({
+      const { error } = await supabase.from('solar_alerts').insert([{
         plant_id: plant.id,
         tipo: alert.type,
         severidade: alert.severity,
@@ -151,7 +151,7 @@ export class SolarService {
         descricao: alert.description ?? null,
         dados_contexto: (alert.contextData as Record<string, unknown>) ?? null,
         status: 'aberto',
-      });
+      }]);
 
       if (error) {
         logger.error(`[SolarService] Failed to insert alert`, error);
