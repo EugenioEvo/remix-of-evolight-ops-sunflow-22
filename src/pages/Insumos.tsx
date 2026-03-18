@@ -304,7 +304,7 @@ export default function Insumos() {
       setEditingInsumo(null);
       insumoForm.reset();
     } catch (error) {
-      console.error('Error saving insumo:', error);
+      logger.error('Error saving insumo:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar insumo.",
