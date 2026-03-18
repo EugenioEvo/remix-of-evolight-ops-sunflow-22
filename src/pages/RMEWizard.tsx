@@ -296,19 +296,14 @@ const RMEWizard = () => {
 
       if (rmeId) {
         // Update existing
-        const { error } = await supabase
-          .from("rme_relatorios")
-          .update(payload)
-          .eq("id", rmeId);
-        if (error) throw error;
+        await mutateData(
+          supabase.from("rme_relatorios").update(payload).eq("id", rmeId).select().single()
+        );
       } else {
         // Create new
-        const { data, error } = await supabase
-          .from("rme_relatorios")
-          .insert([payload])
-          .select()
-          .single();
-        if (error) throw error;
+        const data = await mutateData(
+          supabase.from("rme_relatorios").insert([payload]).select().single()
+        );
         rmeId = data.id;
         setFormData((prev) => ({ ...prev, id: rmeId }));
 
@@ -316,12 +311,14 @@ const RMEWizard = () => {
         await supabase.rpc("populate_rme_checklist", { p_rme_id: rmeId });
 
         // Load checklist items
-        const { data: items } = await supabase
-          .from("rme_checklist_items")
-          .select("*")
-          .eq("rme_id", rmeId)
-          .order("category")
-          .order("item_key");
+        const items = await fetchData(
+          supabase
+            .from("rme_checklist_items")
+            .select("*")
+            .eq("rme_id", rmeId)
+            .order("category")
+            .order("item_key")
+        );
         setChecklistItems(items || []);
       }
 
