@@ -97,6 +97,8 @@ export const useClientesQuery = () => {
           estado,
           cep,
           cnpj_cpf,
+          ufv_solarz,
+          prioridade,
           profiles(nome, email, telefone)
         `)
         .order('empresa', { ascending: true });
