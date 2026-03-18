@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               continue;
             }
           } catch (fnErr) {
-            console.error('Erro ao criar perfil automaticamente:', fnErr);
+            logger.error('Erro ao criar perfil automaticamente:', fnErr);
           }
         }
 
