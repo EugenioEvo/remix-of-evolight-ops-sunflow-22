@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchData, mutateData } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Check, Loader2, FileDown } from "lucide-react";
@@ -136,30 +137,36 @@ const RMEWizard = () => {
 
   const loadTecnicoId = async () => {
     if (!profile?.user_id) return;
-    const { data } = await supabase
-      .from("tecnicos")
-      .select("id, profiles(nome)")
-      .eq("profile_id", profile.id)
-      .maybeSingle();
-    if (data) {
-      setTecnicoId(data.id);
-      setTecnicoNome((data.profiles as any)?.nome || "");
+    try {
+      const data = await fetchData(
+        supabase
+          .from("tecnicos")
+          .select("id, profiles(nome)")
+          .eq("profile_id", profile.id)
+          .maybeSingle()
+      );
+      if (data) {
+        setTecnicoId(data.id);
+        setTecnicoNome((data.profiles as any)?.nome || "");
+      }
+    } catch {
+      // tecnico not found is acceptable
     }
   };
 
   const loadWorkOrder = async (workOrderId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("ordens_servico")
-        .select(`
-          id, numero_os, site_name, ticket_id,
-          tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
-        `)
-        .eq("id", workOrderId)
-        .single();
-
-      if (error) throw error;
+      const data = await fetchData(
+        supabase
+          .from("ordens_servico")
+          .select(`
+            id, numero_os, site_name, ticket_id,
+            tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
+          `)
+          .eq("id", workOrderId)
+          .single()
+      );
 
       setWorkOrder(data as unknown as WorkOrderInfo);
       setFormData((prev) => ({
@@ -182,20 +189,20 @@ const RMEWizard = () => {
   const loadExistingRME = async (rmeId: string) => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("rme_relatorios")
-        .select(`
-          *,
-          tecnicos(id, profiles(nome)),
-          ordens_servico(
-            id, numero_os, site_name, ticket_id,
-            tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
-          )
-        `)
-        .eq("id", rmeId)
-        .single();
-
-      if (error) throw error;
+      const data = await fetchData(
+        supabase
+          .from("rme_relatorios")
+          .select(`
+            *,
+            tecnicos(id, profiles(nome)),
+            ordens_servico(
+              id, numero_os, site_name, ticket_id,
+              tickets(id, endereco_servico, clientes(empresa, ufv_solarz))
+            )
+          `)
+          .eq("id", rmeId)
+          .single()
+      );
 
       const os = data.ordens_servico as any;
       const tecnico = data.tecnicos as any;
@@ -231,12 +238,14 @@ const RMEWizard = () => {
       });
 
       // Load checklist items
-      const { data: items } = await supabase
-        .from("rme_checklist_items")
-        .select("*")
-        .eq("rme_id", rmeId)
-        .order("category")
-        .order("item_key");
+      const items = await fetchData(
+        supabase
+          .from("rme_checklist_items")
+          .select("*")
+          .eq("rme_id", rmeId)
+          .order("category")
+          .order("item_key")
+      );
 
       setChecklistItems(items || []);
     } catch (error: any) {
@@ -287,19 +296,14 @@ const RMEWizard = () => {
 
       if (rmeId) {
         // Update existing
-        const { error } = await supabase
-          .from("rme_relatorios")
-          .update(payload)
-          .eq("id", rmeId);
-        if (error) throw error;
+        await mutateData(
+          supabase.from("rme_relatorios").update(payload).eq("id", rmeId).select().single()
+        );
       } else {
         // Create new
-        const { data, error } = await supabase
-          .from("rme_relatorios")
-          .insert([payload])
-          .select()
-          .single();
-        if (error) throw error;
+        const data = await mutateData(
+          supabase.from("rme_relatorios").insert([payload]).select().single()
+        );
         rmeId = data.id;
         setFormData((prev) => ({ ...prev, id: rmeId }));
 
@@ -307,12 +311,14 @@ const RMEWizard = () => {
         await supabase.rpc("populate_rme_checklist", { p_rme_id: rmeId });
 
         // Load checklist items
-        const { data: items } = await supabase
-          .from("rme_checklist_items")
-          .select("*")
-          .eq("rme_id", rmeId)
-          .order("category")
-          .order("item_key");
+        const items = await fetchData(
+          supabase
+            .from("rme_checklist_items")
+            .select("*")
+            .eq("rme_id", rmeId)
+            .order("category")
+            .order("item_key")
+        );
         setChecklistItems(items || []);
       }
 
@@ -356,15 +362,15 @@ const RMEWizard = () => {
   };
 
   const updateChecklistItem = async (itemId: string, checked: boolean) => {
-    const { error } = await supabase
-      .from("rme_checklist_items")
-      .update({ checked })
-      .eq("id", itemId);
-
-    if (!error) {
+    try {
+      await mutateData(
+        supabase.from("rme_checklist_items").update({ checked }).eq("id", itemId).select().single()
+      );
       setChecklistItems((prev) =>
         prev.map((item) => (item.id === itemId ? { ...item, checked } : item))
       );
+    } catch {
+      // silent fail for checklist toggle
     }
   };
 

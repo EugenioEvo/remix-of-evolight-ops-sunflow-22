@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/services/api';
+import { storageService } from '@/services/storageService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -193,17 +194,9 @@ const RME = () => {
     
     for (const file of files) {
       const fileName = `${user?.id}/${folder}/${Date.now()}_${file.name}`;
-      const { error } = await supabase.storage
-        .from('rme-fotos')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data } = supabase.storage
-        .from('rme-fotos')
-        .getPublicUrl(fileName);
-      
-      urls.push(data.publicUrl);
+      await storageService.upload('rme-fotos', fileName, file);
+      const publicUrl = storageService.getPublicUrl('rme-fotos', fileName);
+      urls.push(publicUrl);
     }
     
     return urls;
