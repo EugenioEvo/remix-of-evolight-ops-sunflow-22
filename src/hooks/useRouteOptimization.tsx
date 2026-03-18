@@ -121,7 +121,7 @@ export const useRouteOptimization = () => {
         } else if (mapboxResult.data?.error?.includes('MAPBOX_ACCESS_TOKEN')) {
           logger.warn('[RouteOpt] Token Mapbox não configurado');
         } else {
-          console.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
+          logger.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
         }
       } catch (err) {
         console.warn('[RouteOpt] Mapbox exception:', err);
