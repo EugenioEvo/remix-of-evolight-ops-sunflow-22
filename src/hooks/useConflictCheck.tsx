@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { logger } from '@/services/api';
 
 export interface TechnicianSchedule {
   date: Date;
