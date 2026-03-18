@@ -177,7 +177,7 @@ const RME = () => {
 
       setRmes(rmeData || []);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      logger.error('Erro ao carregar dados:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados',
