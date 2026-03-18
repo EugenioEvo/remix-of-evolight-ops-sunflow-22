@@ -236,7 +236,7 @@ const Agenda = () => {
       // Recarregar dados para atualizar timestamp
       loadOrdensServico();
     } catch (error: any) {
-      console.error('Erro ao reenviar convite:', error);
+      logger.error('Erro ao reenviar convite:', error);
       toast({
         title: 'Erro ao reenviar',
         description: error.message || 'Não foi possível reenviar o convite',
