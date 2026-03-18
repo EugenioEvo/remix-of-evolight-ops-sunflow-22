@@ -103,7 +103,7 @@ export const useRouteOptimization = () => {
       let data: any, provider: Provider = 'local';
       
       // Tentar Mapbox primeiro
-      console.log(`[RouteOpt] Tentando Mapbox com ${coordinates.length} coordenadas...`);
+      logger.info(`[RouteOpt] Tentando Mapbox com ${coordinates.length} coordenadas...`);
       const mapboxStart = Date.now();
       try {
         const mapboxResult = await supabase.functions.invoke('mapbox-directions', {
