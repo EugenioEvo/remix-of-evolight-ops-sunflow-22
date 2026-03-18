@@ -208,7 +208,7 @@ export const useRouteOptimization = () => {
           });
           logger.info('[RouteOpt] Rota persistida no banco');
         } catch (err) {
-          console.warn('[RouteOpt] Erro ao persistir rota:', err);
+          logger.warn('[RouteOpt] Erro ao persistir rota:', err);
         }
       }
 
