@@ -143,8 +143,6 @@ const Tickets = () => {
 
   const onSubmit = async (data: TicketForm) => {
     try {
-      setLoading(true);
-
       // Definir técnico se selecionado, senão deixar null
       const tecnico_id = selectedTechnicianForTicket || null;
       
@@ -169,33 +167,13 @@ const Tickets = () => {
         created_by: user?.id,
         tecnico_responsavel_id: tecnico_id,
         anexos: attachments,
-        // Status: sempre inicia como aberto
         status: 'aberto',
       };
 
       if (editingTicket) {
-        const { error } = await supabase
-          .from('tickets')
-          .update(ticketData as any)
-          .eq('id', editingTicket.id);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Sucesso',
-          description: 'Ticket atualizado com sucesso!',
-        });
+        await updateTicketMutation.mutateAsync({ id: editingTicket.id, data: ticketData });
       } else {
-        const { error } = await supabase
-          .from('tickets')
-          .insert([ticketData as any]);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Sucesso',
-          description: 'Ticket criado aguardando aprovação!',
-        });
+        await createTicketMutation.mutateAsync(ticketData);
       }
 
       setIsDialogOpen(false);
@@ -203,16 +181,8 @@ const Tickets = () => {
       setSelectedTechnicianForTicket('');
       setAttachments([]);
       form.reset();
-      loadData();
     } catch (error: any) {
       logger.error('Erro ao salvar ticket:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao salvar ticket',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
