@@ -449,7 +449,7 @@ const RME = () => {
       const { data: equipment, error } = await query.maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar equipamento:', error);
+        logger.error('Erro ao buscar equipamento:', error);
         throw error;
       }
 

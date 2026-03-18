@@ -49,7 +49,7 @@ const DashboardStats = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      logger.error('Erro ao carregar estatísticas:', error);
     } finally {
       setLoading(false);
     }

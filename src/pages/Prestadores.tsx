@@ -165,7 +165,7 @@ const Prestadores = () => {
       fetchPrestadores();
     } catch (error) {
       toast.error('Erro ao salvar prestador');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 

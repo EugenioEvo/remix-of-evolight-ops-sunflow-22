@@ -262,7 +262,7 @@ const Agenda = () => {
 
       loadOrdensServico();
     } catch (error: any) {
-      console.error('Erro ao gerar token:', error);
+      logger.error('Erro ao gerar token:', error);
       toast({
         title: 'Erro ao gerar QR Code',
         description: error.message,

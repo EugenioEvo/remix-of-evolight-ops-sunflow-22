@@ -247,7 +247,7 @@ const MinhasOS = () => {
         description: `Ordem de serviço ${os.numero_os} baixada com sucesso.`,
       });
     } catch (error: any) {
-      console.error('Erro ao gerar PDF:', error);
+      logger.error('Erro ao gerar PDF:', error);
       toast({
         title: "Erro ao abrir PDF",
         description: error.message,

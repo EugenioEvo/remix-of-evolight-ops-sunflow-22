@@ -344,7 +344,7 @@ const Tickets = () => {
 
       loadData();
     } catch (error: any) {
-      console.error('Erro ao atribuir técnico:', error);
+      logger.error('Erro ao atribuir técnico:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atribuir técnico',
