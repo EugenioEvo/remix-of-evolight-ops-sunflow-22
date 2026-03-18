@@ -139,7 +139,7 @@ export const useRouteOptimization = () => {
           logger.info(`[RouteOpt] OSRM respondeu em ${Date.now() - osrmStart}ms`);
           
           if (osrmResult.error) {
-            console.warn('[RouteOpt] OSRM invoke error:', osrmResult.error);
+            logger.warn('[RouteOpt] OSRM invoke error:', osrmResult.error);
           } else if (osrmResult.data?.success) {
             data = osrmResult.data;
             provider = 'osrm';
