@@ -1049,6 +1049,253 @@ export type Database = {
           },
         ]
       }
+      solar_agent_logs: {
+        Row: {
+          action: string
+          agent_name: string
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          plant_id: string | null
+          status: string | null
+        }
+        Insert: {
+          action: string
+          agent_name: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          plant_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          action?: string
+          agent_name?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          plant_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_agent_logs_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "solar_plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_alerts: {
+        Row: {
+          created_at: string
+          dados_contexto: Json | null
+          descricao: string | null
+          id: string
+          plant_id: string
+          resolvido_em: string | null
+          resolvido_por: string | null
+          severidade: string
+          status: string
+          ticket_id: string | null
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dados_contexto?: Json | null
+          descricao?: string | null
+          id?: string
+          plant_id: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          severidade: string
+          status?: string
+          ticket_id?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dados_contexto?: Json | null
+          descricao?: string | null
+          id?: string
+          plant_id?: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          severidade?: string
+          status?: string
+          ticket_id?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_alerts_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "solar_plants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solar_alerts_resolvido_por_fkey"
+            columns: ["resolvido_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solar_alerts_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_metrics: {
+        Row: {
+          corrente_ac: number | null
+          corrente_dc: number | null
+          created_at: string
+          eficiencia_percent: number | null
+          fator_potencia: number | null
+          frequencia_hz: number | null
+          geracao_kwh: number | null
+          id: string
+          irradiacao_wm2: number | null
+          plant_id: string
+          potencia_instantanea_kw: number | null
+          temperatura_inversor: number | null
+          tensao_ac: number | null
+          tensao_dc: number | null
+          timestamp: string
+        }
+        Insert: {
+          corrente_ac?: number | null
+          corrente_dc?: number | null
+          created_at?: string
+          eficiencia_percent?: number | null
+          fator_potencia?: number | null
+          frequencia_hz?: number | null
+          geracao_kwh?: number | null
+          id?: string
+          irradiacao_wm2?: number | null
+          plant_id: string
+          potencia_instantanea_kw?: number | null
+          temperatura_inversor?: number | null
+          tensao_ac?: number | null
+          tensao_dc?: number | null
+          timestamp: string
+        }
+        Update: {
+          corrente_ac?: number | null
+          corrente_dc?: number | null
+          created_at?: string
+          eficiencia_percent?: number | null
+          fator_potencia?: number | null
+          frequencia_hz?: number | null
+          geracao_kwh?: number | null
+          id?: string
+          irradiacao_wm2?: number | null
+          plant_id?: string
+          potencia_instantanea_kw?: number | null
+          temperatura_inversor?: number | null
+          tensao_ac?: number | null
+          tensao_dc?: number | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_metrics_plant_id_fkey"
+            columns: ["plant_id"]
+            isOneToOne: false
+            referencedRelation: "solar_plants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_plants: {
+        Row: {
+          ativo: boolean | null
+          cidade: string | null
+          cliente_id: string
+          created_at: string
+          data_instalacao: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          marca_inversor: string | null
+          modelo_inversor: string | null
+          nome: string
+          potencia_kwp: number | null
+          serial_inversor: string | null
+          solarz_plant_id: string | null
+          solarz_status: string | null
+          ultima_sincronizacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          cidade?: string | null
+          cliente_id: string
+          created_at?: string
+          data_instalacao?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          marca_inversor?: string | null
+          modelo_inversor?: string | null
+          nome: string
+          potencia_kwp?: number | null
+          serial_inversor?: string | null
+          solarz_plant_id?: string | null
+          solarz_status?: string | null
+          ultima_sincronizacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          cidade?: string | null
+          cliente_id?: string
+          created_at?: string
+          data_instalacao?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          marca_inversor?: string | null
+          modelo_inversor?: string | null
+          nome?: string
+          potencia_kwp?: number | null
+          serial_inversor?: string | null
+          solarz_plant_id?: string | null
+          solarz_status?: string | null
+          ultima_sincronizacao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_plants_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       status_historico: {
         Row: {
           alterado_por: string | null
