@@ -36,7 +36,7 @@ export const useSchedule = () => {
       if (error) throw error;
       return result as boolean;
     } catch (error) {
-      console.error('Erro ao verificar conflito:', error);
+      logger.error('Erro ao verificar conflito:', error);
       return false;
     }
   };
