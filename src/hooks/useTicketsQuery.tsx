@@ -29,6 +29,8 @@ export const useTicketsQuery = (params: TicketsQueryParams = {}) => {
             cidade,
             estado,
             cep,
+            ufv_solarz,
+            prioridade,
             profiles(nome, email)
           ),
           prestadores:tecnico_responsavel_id(
