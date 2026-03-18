@@ -116,7 +116,7 @@ export const useConflictCheck = () => {
         ticketTitle: (os.tickets as any)?.titulo
       }));
     } catch (error) {
-      console.error('Erro ao buscar agenda:', error);
+      logger.error('Erro ao buscar agenda:', error);
       return [];
     }
   };

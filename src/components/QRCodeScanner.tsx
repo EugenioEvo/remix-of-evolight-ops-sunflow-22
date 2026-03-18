@@ -103,7 +103,7 @@ export const QRCodeScanner = ({ onScanSuccess, onClose }: QRCodeScannerProps) =>
         scannerRef.current.clear();
       }
     } catch (err) {
-      console.error('Erro ao parar scanner:', err);
+      logger.error('Erro ao parar scanner:', err);
     } finally {
       setScanning(false);
     }

@@ -73,7 +73,7 @@ export const PresenceDashboard = () => {
         taxaConfirmacao
       });
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      logger.error('Erro ao carregar estatísticas:', error);
     } finally {
       setLoading(false);
     }

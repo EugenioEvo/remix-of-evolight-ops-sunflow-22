@@ -79,7 +79,7 @@ export const GerarOSDialog = ({ open, onOpenChange, ticketId, onSuccess }: Gerar
       if (onSuccess) onSuccess();
 
     } catch (error: any) {
-      console.error('Erro ao gerar OS:', error);
+      logger.error('Erro ao gerar OS:', error);
       toast.error(error.message || 'Erro ao gerar Ordem de Serviço');
     } finally {
       setLoading(false);

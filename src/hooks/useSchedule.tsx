@@ -193,7 +193,7 @@ export const useSchedule = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao agendar OS:', error);
+      logger.error('Erro ao agendar OS:', error);
       toast({
         title: 'Erro ao agendar',
         description: error.message,

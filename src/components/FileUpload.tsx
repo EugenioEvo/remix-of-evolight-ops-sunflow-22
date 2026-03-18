@@ -90,7 +90,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         description: `${uploadedPaths.length} arquivo(s) enviado(s)`,
       });
     } catch (error: any) {
-      console.error('Erro ao fazer upload:', error);
+      logger.error('Erro ao fazer upload:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao fazer upload',

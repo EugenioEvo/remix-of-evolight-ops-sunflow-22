@@ -22,9 +22,7 @@ class MapErrorBoundary extends React.Component<
   }
   
   componentDidCatch(error: any, info: any) {
-    console.error('MapErrorBoundary caught error:', error);
-    console.error('Error info:', info);
-    console.error('Component stack:', info?.componentStack);
+    console.error('MapErrorBoundary caught error:', error, info);
   }
   
   handleReset = () => {

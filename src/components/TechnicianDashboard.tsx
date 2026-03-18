@@ -82,7 +82,7 @@ const TechnicianDashboard = () => {
         setRecentOS(osData.filter(os => os.tickets.status !== 'concluido').slice(0, 5));
       }
     } catch (error) {
-      console.error("Erro ao carregar dashboard:", error);
+      logger.error("Erro ao carregar dashboard:", error);
     } finally {
       setLoading(false);
     }
