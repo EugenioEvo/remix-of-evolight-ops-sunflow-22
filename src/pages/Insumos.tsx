@@ -372,7 +372,7 @@ export default function Insumos() {
       setIsResponsavelDialogOpen(false);
       responsavelForm.reset();
     } catch (error) {
-      console.error('Error saving responsavel:', error);
+      logger.error('Error saving responsavel:', error);
       toast({
         title: "Erro",
         description: "Erro ao cadastrar responsável.",
