@@ -102,51 +102,6 @@ const MinhasOS = () => {
     }
   };
 
-  const handleIniciarExecucao = async (os: OrdemServico) => {
-    setStartingId(os.id);
-    try {
-      const { error } = await supabase
-        .from("tickets")
-        .update({ 
-          status: "em_execucao",
-          data_inicio_execucao: new Date().toISOString()
-        })
-        .eq("id", os.ticket_id);
-
-      if (error) {
-        // Mensagem de erro específica para permissão negada
-        if (error.code === '42501' || error.message?.includes('permission') || error.message?.includes('policy')) {
-          toast({
-            title: "Sem permissão para iniciar execução",
-            description: "Você não tem permissão para alterar o status deste ticket. Fale com o administrador.",
-            variant: "destructive",
-          });
-        } else {
-          throw error;
-        }
-        return;
-      }
-
-      // Recarregar IMEDIATAMENTE após a atualização
-      await loadOrdensServico();
-
-      toast({
-        title: "Execução iniciada!",
-        description: "A OS foi movida para a aba 'Em Execução'. Agora você pode preencher o RME.",
-      });
-
-      // Mudar para a aba "Em Execução" APÓS recarregar
-      setActiveTab('execucao');
-    } catch (error: any) {
-      toast({
-        title: "Erro ao iniciar execução",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setStartingId(null);
-    }
-  };
 
   const handlePreencherRME = async (os: OrdemServico) => {
     setNavigating(os.id);
