@@ -148,7 +148,7 @@ export const useRouteOptimization = () => {
             logger.warn('[RouteOpt] OSRM fallback:', osrmResult.data?.error);
           }
         } catch (err) {
-          console.warn('[RouteOpt] OSRM exception:', err);
+          logger.warn('[RouteOpt] OSRM exception:', err);
         }
       }
 
