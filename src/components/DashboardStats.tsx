@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, CheckCircle, Clock, FileText, Wrench, ClipboardCheck } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 
 const DashboardStats = () => {
@@ -24,7 +25,7 @@ const DashboardStats = () => {
       const { data, error } = await supabase.rpc('get_dashboard_stats');
 
       if (error) {
-        console.error('Erro ao carregar estatísticas:', error);
+        logger.error('Erro ao carregar estatísticas:', error);
         return;
       }
 
@@ -48,7 +49,7 @@ const DashboardStats = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
+      logger.error('Erro ao carregar estatísticas:', error);
     } finally {
       setLoading(false);
     }

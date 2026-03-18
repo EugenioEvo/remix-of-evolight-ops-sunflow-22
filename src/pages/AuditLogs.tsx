@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +65,7 @@ const AuditLogs = () => {
 
       setLogs((data || []) as AuditLog[]);
     } catch (error: any) {
-      console.error('Erro ao carregar logs:', error);
+      logger.error('Erro ao carregar logs:', error);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 import { useAuth } from "@/hooks/useAuth";
 import { useTicketsRealtime } from "@/hooks/useTicketsRealtime";
 import { Button } from "@/components/ui/button";
@@ -246,7 +247,7 @@ const MinhasOS = () => {
         description: `Ordem de serviço ${os.numero_os} baixada com sucesso.`,
       });
     } catch (error: any) {
-      console.error('Erro ao gerar PDF:', error);
+      logger.error('Erro ao gerar PDF:', error);
       toast({
         title: "Erro ao abrir PDF",
         description: error.message,

@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Plus, Package, PillIcon, Wrench, Trash2, Edit, ArrowUpIcon, ArrowDownIcon, Users, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { logger } from '@/services/api';
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -260,7 +261,7 @@ export default function Insumos() {
       setResponsaveis((responsaveisData || []) as Responsavel[]);
       setMovimentacoes((movimentacoesData || []) as Movimentacao[]);
     } catch (error) {
-      console.error('Error loading data:', error);
+      logger.error('Error loading data:', error);
       toast({
         title: "Erro",
         description: "Erro ao carregar dados. Verifique sua conexão.",
@@ -303,7 +304,7 @@ export default function Insumos() {
       setEditingInsumo(null);
       insumoForm.reset();
     } catch (error) {
-      console.error('Error saving insumo:', error);
+      logger.error('Error saving insumo:', error);
       toast({
         title: "Erro",
         description: "Erro ao salvar insumo.",
@@ -345,7 +346,7 @@ export default function Insumos() {
       setSelectedInsumo(null);
       movimentacaoForm.reset();
     } catch (error) {
-      console.error('Error saving movimentacao:', error);
+      logger.error('Error saving movimentacao:', error);
       toast({
         title: "Erro",
         description: "Erro ao registrar movimentação.",
@@ -371,7 +372,7 @@ export default function Insumos() {
       setIsResponsavelDialogOpen(false);
       responsavelForm.reset();
     } catch (error) {
-      console.error('Error saving responsavel:', error);
+      logger.error('Error saving responsavel:', error);
       toast({
         title: "Erro",
         description: "Erro ao cadastrar responsável.",
@@ -412,7 +413,7 @@ export default function Insumos() {
       
       loadData();
     } catch (error) {
-      console.error('Error deleting insumo:', error);
+      logger.error('Error deleting insumo:', error);
       toast({
         title: "Erro",
         description: "Erro ao excluir insumo.",

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -168,13 +169,13 @@ const Tickets = () => {
         .order('created_at', { ascending: false });
 
       if (ticketsError) {
-        console.error('Erro ao carregar tickets:', ticketsError);
+        logger.error('Erro ao carregar tickets:', ticketsError);
         throw ticketsError;
       }
 
       setTickets(ticketsData || []);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      logger.error('Erro ao carregar dados:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados',
@@ -258,7 +259,7 @@ const Tickets = () => {
       form.reset();
       loadData();
     } catch (error: any) {
-      console.error('Erro ao salvar ticket:', error);
+      logger.error('Erro ao salvar ticket:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao salvar ticket',
@@ -343,7 +344,7 @@ const Tickets = () => {
 
       loadData();
     } catch (error: any) {
-      console.error('Erro ao atribuir técnico:', error);
+      logger.error('Erro ao atribuir técnico:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao atribuir técnico',
@@ -622,7 +623,7 @@ const Tickets = () => {
         loadData();
       }
     } catch (error: any) {
-      console.error('Erro ao reprocessar geocodificação:', error);
+      logger.error('Erro ao reprocessar geocodificação:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao geocodificar endereço',
@@ -1305,7 +1306,7 @@ const Tickets = () => {
                                         .createSignedUrl(filePath, 60 * 60 * 24 * 7);
                                       
                                       if (error) {
-                                        console.error('Erro ao gerar URL:', error);
+                                        logger.error('Erro ao gerar URL:', error);
                                         throw error;
                                       }
                                       
@@ -1326,7 +1327,7 @@ const Tickets = () => {
                                       });
                                     }
                                   } catch (error: any) {
-                                    console.error('Erro ao abrir OS:', error);
+                                    logger.error('Erro ao abrir OS:', error);
                                     toast({
                                       title: 'Erro',
                                       description: 'Erro ao abrir OS: ' + error.message,
@@ -1392,7 +1393,7 @@ const Tickets = () => {
                                       }
                                     }
                                   } catch (error) {
-                                    console.error('Erro ao abrir OS:', error);
+                                    logger.error('Erro ao abrir OS:', error);
                                   }
                                 }}
                               >

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 import { format, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Clock, User, MapPin, X, Mail, CheckCircle, Send, AlertCircle, AlertTriangle, Edit } from 'lucide-react';
@@ -114,7 +115,7 @@ const Agenda = () => {
       if (error) throw error;
       setOrdensServico((data as any) || []);
     } catch (error) {
-      console.error('Erro ao carregar agenda:', error);
+      logger.error('Erro ao carregar agenda:', error);
     } finally {
       setLoading(false);
     }
@@ -235,7 +236,7 @@ const Agenda = () => {
       // Recarregar dados para atualizar timestamp
       loadOrdensServico();
     } catch (error: any) {
-      console.error('Erro ao reenviar convite:', error);
+      logger.error('Erro ao reenviar convite:', error);
       toast({
         title: 'Erro ao reenviar',
         description: error.message || 'Não foi possível reenviar o convite',
@@ -261,7 +262,7 @@ const Agenda = () => {
 
       loadOrdensServico();
     } catch (error: any) {
-      console.error('Erro ao gerar token:', error);
+      logger.error('Erro ao gerar token:', error);
       toast({
         title: 'Erro ao gerar QR Code',
         description: error.message,
