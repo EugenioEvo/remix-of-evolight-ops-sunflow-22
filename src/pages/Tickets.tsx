@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { logger } from '@/services/api';
+import { useQueryClient } from '@tanstack/react-query';
+import logger from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
+import { useTicketsQuery, useClientesQuery, usePrestadoresQuery, useCreateTicketMutation, useUpdateTicketMutation, useDeleteTicketMutation } from '@/hooks/useTicketsQuery';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
