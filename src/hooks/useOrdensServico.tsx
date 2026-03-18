@@ -120,12 +120,13 @@ export const useUpdateOSStatus = () => {
       status: string;
       extraData?: Record<string, unknown>;
     }) => {
+      const updateData: Record<string, unknown> = {
+        status,
+        ...extraData,
+      };
       const { error } = await supabase
         .from('tickets')
-        .update({
-          status,
-          ...extraData,
-        })
+        .update(updateData as any)
         .eq('id', ticketId);
 
       if (error) {
