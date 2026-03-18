@@ -117,7 +117,7 @@ const CargaTrabalho = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar carga de trabalho:', error);
+      logger.error('Erro ao carregar carga de trabalho:', error);
     } finally {
       setLoading(false);
     }
