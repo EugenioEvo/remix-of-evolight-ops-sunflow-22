@@ -108,7 +108,7 @@ export default function Clientes() {
 
       setClientes(clientesFormatted);
     } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      logger.error('Erro ao carregar clientes:', error);
       toast.error('Erro ao carregar clientes');
     } finally {
       setLoading(false);
