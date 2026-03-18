@@ -137,14 +137,20 @@ const RMEWizard = () => {
 
   const loadTecnicoId = async () => {
     if (!profile?.user_id) return;
-    const { data } = await supabase
-      .from("tecnicos")
-      .select("id, profiles(nome)")
-      .eq("profile_id", profile.id)
-      .maybeSingle();
-    if (data) {
-      setTecnicoId(data.id);
-      setTecnicoNome((data.profiles as any)?.nome || "");
+    try {
+      const data = await fetchData(
+        supabase
+          .from("tecnicos")
+          .select("id, profiles(nome)")
+          .eq("profile_id", profile.id)
+          .maybeSingle()
+      );
+      if (data) {
+        setTecnicoId(data.id);
+        setTecnicoNome((data.profiles as any)?.nome || "");
+      }
+    } catch {
+      // tecnico not found is acceptable
     }
   };
 
