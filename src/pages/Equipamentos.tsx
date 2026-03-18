@@ -147,7 +147,7 @@ const Equipamentos = () => {
 
         if (error) {
           toast.error('Erro ao atualizar equipamento');
-          console.error('Error updating equipamento:', error);
+          logger.error('Error updating equipamento:', error);
           return;
         }
 
