@@ -8,93 +8,41 @@ const corsHeaders = {
 
 const LOW_GENERATION_RATIO = 0.70
 
-// ── Proxy support ───────────────────────────────────────────
-// If SOLARZ_PROXY_URL is set, all requests go through the Cloudflare Worker proxy
-// instead of hitting the SolarZ API directly (avoids IP blocking).
+// ── SolarZ via Cloudflare Worker proxy ──────────────────────
 
-function buildRequestUrl(baseUrl: string, proxyUrl: string | null, path: string): string {
-  if (proxyUrl) {
-    return `${proxyUrl}${path}`
-  }
-  return `${baseUrl}${path}`
-}
-
-function buildHeaders(username: string, password: string, proxySecret: string | null, proxyUrl: string | null): Record<string, string> {
-  if (proxyUrl && proxySecret) {
-    // When using proxy, auth is handled by the proxy itself
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'X-Proxy-Secret': proxySecret,
-    }
-  }
-  return solarzHeaders(username, password)
-}
-
-// ── SolarZ API helpers (Basic Auth) ─────────────────────────
-
-function solarzHeaders(username: string, password: string): Record<string, string> {
-  const credentials = btoa(`${username}:${password}`)
+function proxyHeaders(): Record<string, string> {
+  const secret = Deno.env.get('SOLARZ_PROXY_SECRET') || ''
   return {
-    'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'Evolight-JARVIS/1.0',
-    'X-Requested-With': 'XMLHttpRequest',
+    'X-Proxy-Secret': secret,
   }
 }
 
-async function solarzGet(url: string, headers: Record<string, string>) {
-  const res = await fetch(url, { headers, redirect: 'manual' })
-
-  if (res.status >= 300 && res.status < 400) {
-    const location = res.headers.get('location')
-    console.warn(`SolarZ redirect ${res.status} → ${location}`)
-    if (location) {
-      const redirectRes = await fetch(location, { headers })
-      return redirectRes.json()
-    }
-  }
-
+async function solarzGet(url: string) {
+  const headers = proxyHeaders()
+  const res = await fetch(url, { headers })
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
-    const body = await res.text()
-    console.error(`SolarZ non-JSON response from ${url}:`,
-      `status=${res.status}`, `content-type=${contentType}`,
-      `body_preview=${body.substring(0, 300)}`)
-    throw new Error(`SolarZ returned ${contentType} instead of JSON from ${url}`)
+    const preview = (await res.text()).substring(0, 300)
+    throw new Error(`Non-JSON response from ${url}: ${contentType} - ${preview}`)
   }
-
   if (!res.ok) throw new Error(`SolarZ GET ${url} failed: ${res.status}`)
   return res.json()
 }
 
-async function solarzPost(url: string, headers: Record<string, string>, body?: any) {
+async function solarzPost(url: string, body?: any) {
+  const headers = proxyHeaders()
   const res = await fetch(url, {
     method: 'POST',
     headers,
-    body: body ? JSON.stringify(body) : undefined,
-    redirect: 'manual',
+    body: body ? JSON.stringify(body) : '{}',
   })
-
-  if (res.status >= 300 && res.status < 400) {
-    const location = res.headers.get('location')
-    console.warn(`SolarZ redirect ${res.status} → ${location}`)
-    if (location) {
-      const redirectRes = await fetch(location, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined })
-      return redirectRes.json()
-    }
-  }
-
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
-    const body_text = await res.text()
-    console.error(`SolarZ non-JSON response from ${url}:`,
-      `status=${res.status}`, `content-type=${contentType}`,
-      `body_preview=${body_text.substring(0, 300)}`)
-    throw new Error(`SolarZ returned ${contentType} instead of JSON from ${url}`)
+    const preview = (await res.text()).substring(0, 300)
+    throw new Error(`Non-JSON response from ${url}: ${contentType} - ${preview}`)
   }
-
   if (!res.ok) throw new Error(`SolarZ POST ${url} failed: ${res.status}`)
   return res.json()
 }
