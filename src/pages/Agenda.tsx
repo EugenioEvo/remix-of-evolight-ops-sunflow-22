@@ -1,21 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
-import { format, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Clock, User, MapPin, X, Mail, CheckCircle, Send, AlertCircle, AlertTriangle, Edit } from 'lucide-react';
 import { ScheduleModal } from '@/components/ScheduleModal';
-import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
 import { useCancelOS } from '@/hooks/useCancelOS';
-import { useAgendaRealtime } from '@/hooks/useAgendaRealtime';
 import { EditTechnicianEmailDialog } from '@/components/EditTechnicianEmailDialog';
 import { PresenceConfirmationStatus } from '@/components/PresenceConfirmationStatus';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
+import { useAgendaQuery, useTecnicosQuery, useResendCalendarInvite, useGeneratePresenceQR } from '@/hooks/useAgendaQuery';
 
 interface OrdemServico {
   id: string;
@@ -51,17 +48,9 @@ interface OrdemServico {
   };
 }
 
-interface Tecnico {
-  id: string;
-  nome: string;
-}
-
 const Agenda = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedTecnico, setSelectedTecnico] = useState<string>('todos');
-  const [ordensServico, setOrdensServico] = useState<OrdemServico[]>([]);
-  const [tecnicos, setTecnicos] = useState<Tecnico[]>([]);
-  const [loading, setLoading] = useState(true);
   const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
   const [selectedOS, setSelectedOS] = useState<OrdemServico | null>(null);
   const [editEmailDialogOpen, setEditEmailDialogOpen] = useState(false);
@@ -74,80 +63,17 @@ const Agenda = () => {
   const [resendingInvite, setResendingInvite] = useState<string | null>(null);
   
   const { cancelOS, loading: cancelLoading } = useCancelOS();
-  const { toast } = useToast();
 
-  // Função para recarregar ordens de serviço
-  const loadOrdensServico = useCallback(async () => {
-    setLoading(true);
-    try {
-      const start = startOfMonth(selectedDate);
-      const end = endOfMonth(selectedDate);
+  const { data: ordensServico = [], isLoading: loading } = useAgendaQuery(selectedDate, selectedTecnico);
+  const { data: tecnicos = [] } = useTecnicosQuery();
+  const { resend: resendCalendarInviteAction } = useResendCalendarInvite();
+  const { generate: generatePresenceQRAction } = useGeneratePresenceQR();
 
-      let query = supabase
-        .from('ordens_servico')
-        .select(`
-          *,
-          tecnicos!tecnico_id(
-            id,
-            profile_id,
-            profiles!inner(nome, email)
-          ),
-          tickets!inner(
-            numero_ticket,
-            titulo,
-            endereco_servico,
-            status,
-            prioridade,
-            clientes!inner(empresa)
-          )
-        `)
-        .gte('data_programada', start.toISOString())
-        .lte('data_programada', end.toISOString())
-        .order('data_programada', { ascending: true })
-        .order('hora_inicio', { ascending: true });
-
-      if (selectedTecnico !== 'todos') {
-        query = query.eq('tecnico_id', selectedTecnico);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      setOrdensServico((data as any) || []);
-    } catch (error) {
-      console.error('Erro ao carregar agenda:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedDate, selectedTecnico]);
-  
-  useTicketsRealtime();
-  useAgendaRealtime({ onUpdate: loadOrdensServico, selectedDate });
-
-  useEffect(() => {
-    loadTecnicos();
-  }, []);
-
-  useEffect(() => {
-    loadOrdensServico();
-  }, [selectedDate, selectedTecnico]);
-
-  const loadTecnicos = async () => {
-    const { data } = await supabase
-      .from('prestadores')
-      .select('id, nome')
-      .eq('categoria', 'tecnico')
-      .order('nome');
-    
-    if (data) setTecnicos(data as any);
-  };
-
-
-  const osDoDia = ordensServico.filter(os => 
+  const osDoDia = ordensServico.filter((os: OrdemServico) => 
     isSameDay(new Date(os.data_programada), selectedDate)
   );
 
-  // Usar chave com ano-mês-dia para evitar conflitos entre meses
-  const diasComOS = ordensServico.reduce((acc, os) => {
+  const diasComOS = ordensServico.reduce((acc: Record<string, number>, os: OrdemServico) => {
     const date = new Date(os.data_programada);
     const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
     acc[key] = (acc[key] || 0) + 1;
@@ -171,38 +97,15 @@ const Agenda = () => {
     const hasEmailConfigured = os.tecnicos?.profiles?.email;
 
     if (!hasEmailConfigured) {
-      return {
-        variant: 'secondary' as const,
-        icon: AlertCircle,
-        text: 'Sem email',
-        color: 'text-muted-foreground border-muted-foreground'
-      };
+      return { variant: 'secondary' as const, icon: AlertCircle, text: 'Sem email', color: 'text-muted-foreground border-muted-foreground' };
     }
-
     if (hasErrors) {
-      return {
-        variant: 'outline' as const,
-        icon: AlertTriangle,
-        text: 'Erro ao enviar',
-        color: 'text-destructive border-destructive'
-      };
+      return { variant: 'outline' as const, icon: AlertTriangle, text: 'Erro ao enviar', color: 'text-destructive border-destructive' };
     }
-
     if (hasSentInvite) {
-      return {
-        variant: 'outline' as const,
-        icon: CheckCircle,
-        text: 'Email enviado',
-        color: 'text-green-600 border-green-600'
-      };
+      return { variant: 'outline' as const, icon: CheckCircle, text: 'Email enviado', color: 'text-green-600 border-green-600' };
     }
-
-    return {
-      variant: 'outline' as const,
-      icon: Mail,
-      text: 'Pendente',
-      color: 'text-yellow-600 border-yellow-600'
-    };
+    return { variant: 'outline' as const, icon: Mail, text: 'Pendente', color: 'text-yellow-600 border-yellow-600' };
   };
 
   const getPrioridadeColor = (prioridade: string) => {
@@ -215,58 +118,14 @@ const Agenda = () => {
     return colors[prioridade] || 'bg-gray-100 text-gray-800';
   };
 
-  const resendCalendarInvite = async (osId: string, numeroOS: string) => {
+  const handleResendCalendarInvite = async (osId: string, numeroOS: string) => {
     setResendingInvite(osId);
     try {
-      const { error } = await supabase.functions.invoke('send-calendar-invite', {
-        body: {
-          os_id: osId,
-          action: 'create'
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Convite reenviado',
-        description: `Convite de calendário reenviado para OS ${numeroOS}`
-      });
-
-      // Recarregar dados para atualizar timestamp
-      loadOrdensServico();
-    } catch (error: any) {
-      console.error('Erro ao reenviar convite:', error);
-      toast({
-        title: 'Erro ao reenviar',
-        description: error.message || 'Não foi possível reenviar o convite',
-        variant: 'destructive'
-      });
+      await resendCalendarInviteAction(osId, numeroOS);
+    } catch {
+      // error already handled in hook
     } finally {
       setResendingInvite(null);
-    }
-  };
-
-  const generatePresenceQR = async (osId: string) => {
-    try {
-      const { data, error } = await supabase.rpc('generate_presence_token', {
-        p_os_id: osId
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'QR Code gerado',
-        description: 'Token de confirmação de presença criado com sucesso'
-      });
-
-      loadOrdensServico();
-    } catch (error: any) {
-      console.error('Erro ao gerar token:', error);
-      toast({
-        title: 'Erro ao gerar QR Code',
-        description: error.message,
-        variant: 'destructive'
-      });
     }
   };
 
@@ -313,7 +172,7 @@ const Agenda = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os Técnicos</SelectItem>
-                    {tecnicos.map(tec => (
+                    {tecnicos.map((tec: any) => (
                       <SelectItem key={tec.id} value={tec.id}>
                         {tec.nome}
                       </SelectItem>
@@ -348,7 +207,7 @@ const Agenda = () => {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {osDoDia.map(os => (
+                  {osDoDia.map((os: OrdemServico) => (
                     <Card key={os.id} className="hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-3">
@@ -411,7 +270,7 @@ const Agenda = () => {
                               
                               <PresenceConfirmationStatus 
                                 ordemServico={os}
-                                onGenerateQR={() => generatePresenceQR(os.id)}
+                                onGenerateQR={() => generatePresenceQRAction(os.id)}
                               />
                             </div>
                             <p className="text-sm text-muted-foreground">{os.tickets.titulo}</p>
@@ -481,7 +340,7 @@ const Agenda = () => {
                                       size="sm" 
                                       variant="secondary"
                                       disabled={resendingInvite === os.id}
-                                      onClick={() => resendCalendarInvite(os.id, os.numero_os)}
+                                      onClick={() => handleResendCalendarInvite(os.id, os.numero_os)}
                                     >
                                       <Send className="h-4 w-4 mr-1" />
                                       {resendingInvite === os.id ? 'Enviando...' : 'Reenviar'}
@@ -511,7 +370,7 @@ const Agenda = () => {
                                 if (confirm(`Deseja realmente cancelar a OS ${os.numero_os}? Os convites de calendário serão removidos.`)) {
                                   const success = await cancelOS(os.id);
                                   if (success) {
-                                    loadOrdensServico();
+                                    // Realtime will handle refresh
                                   }
                                 }
                               }}
@@ -543,7 +402,9 @@ const Agenda = () => {
           currentData={selectedOS.data_programada ? new Date(selectedOS.data_programada) : undefined}
           currentHoraInicio={selectedOS.hora_inicio || undefined}
           currentDuracao={selectedOS.duracao_estimada_min || undefined}
-          onSuccess={loadOrdensServico}
+          onSuccess={() => {
+            // Realtime will handle refresh
+          }}
         />
       )}
 
@@ -558,7 +419,9 @@ const Agenda = () => {
           profileId={selectedTecnicoForEmail.profileId}
           currentEmail={selectedTecnicoForEmail.email}
           tecnicoNome={selectedTecnicoForEmail.nome}
-          onSuccess={loadOrdensServico}
+          onSuccess={() => {
+            // Realtime will handle refresh
+          }}
         />
       )}
     </div>

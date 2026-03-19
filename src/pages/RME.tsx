@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
+import { storageService } from '@/services/storageService';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -117,7 +119,7 @@ const RME = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Erro ao carregar OS:', error);
+        logger.error('Erro ao carregar OS:', error);
         toast({
           title: 'Erro ao carregar OS',
           description: 'Não foi possível carregar a OS. Tente novamente.',
@@ -139,7 +141,7 @@ const RME = () => {
 
       setSelectedOS(osData);
     } catch (error: any) {
-      console.error('Erro inesperado ao carregar OS:', error);
+      logger.error('Erro inesperado ao carregar OS:', error);
       toast({
         title: 'Erro inesperado',
         description: 'Ocorreu um erro inesperado. Tente novamente.',
@@ -176,7 +178,7 @@ const RME = () => {
 
       setRmes(rmeData || []);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      logger.error('Erro ao carregar dados:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados',
@@ -192,17 +194,9 @@ const RME = () => {
     
     for (const file of files) {
       const fileName = `${user?.id}/${folder}/${Date.now()}_${file.name}`;
-      const { error } = await supabase.storage
-        .from('rme-fotos')
-        .upload(fileName, file);
-
-      if (error) throw error;
-
-      const { data } = supabase.storage
-        .from('rme-fotos')
-        .getPublicUrl(fileName);
-      
-      urls.push(data.publicUrl);
+      await storageService.upload('rme-fotos', fileName, file);
+      const publicUrl = storageService.getPublicUrl('rme-fotos', fileName);
+      urls.push(publicUrl);
     }
     
     return urls;
@@ -309,7 +303,7 @@ const RME = () => {
       // Voltar para Minhas OS
       navigate('/minhas-os');
     } catch (error: any) {
-      console.error('Erro ao salvar RME:', error);
+      logger.error('Erro ao salvar RME:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao salvar RME',
@@ -448,7 +442,7 @@ const RME = () => {
       const { data: equipment, error } = await query.maybeSingle();
 
       if (error) {
-        console.error('Erro ao buscar equipamento:', error);
+        logger.error('Erro ao buscar equipamento:', error);
         throw error;
       }
 
@@ -502,7 +496,7 @@ const RME = () => {
         setShowQuickAdd(true);
       }
     } catch (error: any) {
-      console.error('Erro ao processar QR Code:', error);
+      logger.error('Erro ao processar QR Code:', error);
       toast({
         title: 'Erro ao processar QR Code',
         description: error.message || 'Não foi possível processar o código escaneado.',
@@ -603,7 +597,7 @@ const RME = () => {
         description: 'O relatório foi exportado com sucesso!',
       });
     } catch (error: any) {
-      console.error('Erro ao exportar PDF:', error);
+      logger.error('Erro ao exportar PDF:', error);
       toast({
         title: 'Erro ao exportar',
         description: error.message || 'Não foi possível gerar o PDF.',

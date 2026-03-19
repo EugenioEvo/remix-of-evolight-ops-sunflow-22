@@ -1,1 +1,19 @@
 project_id = "syozyhaqwyjloxnpfrsw"
+
+[functions.agent-monitor]
+verify_jwt = false
+
+[functions.agent-dispatcher]
+verify_jwt = false
+
+[functions.jarvis-orchestrator]
+verify_jwt = false
+
+[functions.agent-relator]
+verify_jwt = false
+
+[functions.agent-analista]
+verify_jwt = false
+
+[functions.agent-verificador]
+verify_jwt = false

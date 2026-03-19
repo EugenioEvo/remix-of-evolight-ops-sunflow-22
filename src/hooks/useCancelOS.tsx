@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/services/api';
 
 export const useCancelOS = () => {
   const [loading, setLoading] = useState(false);
@@ -44,7 +45,7 @@ export const useCancelOS = () => {
             }
           });
         } catch (emailError) {
-          console.error('Erro ao enviar cancelamento:', emailError);
+          logger.error('Erro ao enviar cancelamento:', emailError);
           // Não bloquear o cancelamento se email falhar
         }
       }
@@ -69,7 +70,7 @@ export const useCancelOS = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao cancelar OS:', error);
+      logger.error('Erro ao cancelar OS:', error);
       toast({
         title: 'Erro ao cancelar',
         description: error.message,

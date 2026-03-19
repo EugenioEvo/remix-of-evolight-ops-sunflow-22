@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/services/api';
 
 interface UserProfile {
   id: string;
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .maybeSingle();
 
         if (error) {
-          console.error('Erro ao buscar perfil:', error);
+          logger.error('Erro ao buscar perfil:', error);
         }
 
         // Se não existe perfil na primeira tentativa, criar (só se tiver sessão)
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               continue;
             }
           } catch (fnErr) {
-            console.error('Erro ao criar perfil automaticamente:', fnErr);
+            logger.error('Erro ao criar perfil automaticamente:', fnErr);
           }
         }
 
@@ -87,7 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           // Última tentativa sem role - permitir acesso como cliente
           if (attempt === maxAttempts - 1) {
-            console.warn('Profile encontrado mas role não foi carregado após 10 tentativas. Usando perfil sem role.');
+            logger.warn('Profile encontrado mas role não foi carregado após 10 tentativas. Usando perfil sem role.');
             // Define role padrão como cliente se não foi carregado
             setProfile({ ...data, role: roleData?.role || 'cliente' });
             return;
@@ -103,7 +104,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Após todas as tentativas, se não encontrou nada
       setProfile(null);
     } catch (error) {
-      console.error('Erro ao buscar/criar perfil:', error);
+      logger.error('Erro ao buscar/criar perfil:', error);
       setProfile(null);
     }
   };

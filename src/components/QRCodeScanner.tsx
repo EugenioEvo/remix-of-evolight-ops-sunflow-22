@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { logger } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -63,7 +64,7 @@ export const QRCodeScanner = ({ onScanSuccess, onClose }: QRCodeScannerProps) =>
         }
       );
     } catch (err: any) {
-      console.error('Erro ao iniciar scanner:', err);
+      logger.error('Erro ao iniciar scanner:', err);
       
       let errorMessage = 'Não foi possível acessar a câmera.';
       if (err.name === 'NotAllowedError') {
@@ -102,7 +103,7 @@ export const QRCodeScanner = ({ onScanSuccess, onClose }: QRCodeScannerProps) =>
         scannerRef.current.clear();
       }
     } catch (err) {
-      console.error('Erro ao parar scanner:', err);
+      logger.error('Erro ao parar scanner:', err);
     } finally {
       setScanning(false);
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/services/api';
 
 export const useRMEApprovals = () => {
   const [loading, setLoading] = useState(false);
@@ -30,7 +31,7 @@ export const useRMEApprovals = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao aprovar RME:', error);
+      logger.error('Erro ao aprovar RME:', error);
       toast({
         title: 'Erro ao aprovar',
         description: error.message,
@@ -75,7 +76,7 @@ export const useRMEApprovals = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao rejeitar RME:', error);
+      logger.error('Erro ao rejeitar RME:', error);
       toast({
         title: 'Erro ao rejeitar',
         description: error.message,

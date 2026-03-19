@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { logger } from '@/services/api';
 
 export interface TechnicianSchedule {
   date: Date;
@@ -77,7 +78,7 @@ export const useConflictCheck = () => {
 
       return { hasConflict: false, conflicts: [] };
     } catch (error) {
-      console.error('Erro ao verificar conflito:', error);
+      logger.error('Erro ao verificar conflito:', error);
       return { hasConflict: false, conflicts: [] };
     } finally {
       setLoading(false);
@@ -115,7 +116,7 @@ export const useConflictCheck = () => {
         ticketTitle: (os.tickets as any)?.titulo
       }));
     } catch (error) {
-      console.error('Erro ao buscar agenda:', error);
+      logger.error('Erro ao buscar agenda:', error);
       return [];
     }
   };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { logger } from '@/services/api';
 
 export interface Notificacao {
   id: string;
@@ -67,7 +68,7 @@ export const useNotifications = () => {
       setNotificacoes(data || []);
       setNaoLidas((data || []).filter(n => !n.lida).length);
     } catch (error) {
-      console.error('Erro ao carregar notificações:', error);
+      logger.error('Erro ao carregar notificações:', error);
     } finally {
       setLoading(false);
     }
@@ -87,7 +88,7 @@ export const useNotifications = () => {
       );
       setNaoLidas(prev => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Erro ao marcar notificação como lida:', error);
+      logger.error('Erro ao marcar notificação como lida:', error);
     }
   };
 
@@ -106,7 +107,7 @@ export const useNotifications = () => {
       setNotificacoes(prev => prev.map(n => ({ ...n, lida: true })));
       setNaoLidas(0);
     } catch (error) {
-      console.error('Erro ao marcar todas como lidas:', error);
+      logger.error('Erro ao marcar todas como lidas:', error);
     }
   };
 
@@ -125,7 +126,7 @@ export const useNotifications = () => {
         setNaoLidas(prev => Math.max(0, prev - 1));
       }
     } catch (error) {
-      console.error('Erro ao deletar notificação:', error);
+      logger.error('Erro ao deletar notificação:', error);
     }
   };
 

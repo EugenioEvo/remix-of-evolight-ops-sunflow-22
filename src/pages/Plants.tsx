@@ -1,28 +1,37 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, MapPin, Zap, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Plus, Search, MapPin, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/sunflow/StatusBadge';
-import { useSupabaseQuery } from '@/hooks/useSupabaseQuery';
-import { getPlantsWithStats, formatCapacity, formatPerformanceRatio } from '@/integrations/sunflow/client';
-import type { PlantStatus, SolarPlantWithStats } from '@/integrations/sunflow/types';
+import { useSolarPlants } from '@/hooks/queries/useSolar';
+
+function formatCapacity(kwp: number | null | undefined): string {
+  if (kwp == null) return '—';
+  if (Number(kwp) >= 1000) return `${(Number(kwp) / 1000).toFixed(1)} MWp`;
+  return `${Number(kwp).toFixed(0)} kWp`;
+}
+
+type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function Plants() {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<PlantStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 
-  const { data: plants = [], loading } = useSupabaseQuery(getPlantsWithStats, []);
+  const { data: plants = [], isLoading: loading } = useSolarPlants();
 
-  const filtered = plants.filter((p) => {
+  const filtered = plants.filter((p: any) => {
     const matchesSearch =
       !search ||
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.code.toLowerCase().includes(search.toLowerCase()) ||
-      p.city.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
+      p.nome?.toLowerCase().includes(search.toLowerCase()) ||
+      p.serial_inversor?.toLowerCase().includes(search.toLowerCase()) ||
+      p.cidade?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && p.ativo) ||
+      (statusFilter === 'inactive' && !p.ativo);
     return matchesSearch && matchesStatus;
   });
 
@@ -56,7 +65,7 @@ export default function Plants() {
         </div>
         <Select
           value={statusFilter}
-          onValueChange={(v) => setStatusFilter(v as PlantStatus | 'all')}
+          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
         >
           <SelectTrigger className="w-full sm:w-44">
             <SelectValue placeholder="Status" />
@@ -65,8 +74,6 @@ export default function Plants() {
             <SelectItem value="all">Todos os status</SelectItem>
             <SelectItem value="active">Ativa</SelectItem>
             <SelectItem value="inactive">Inativa</SelectItem>
-            <SelectItem value="maintenance">Manutenção</SelectItem>
-            <SelectItem value="decommissioned">Descomissionada</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -75,7 +82,7 @@ export default function Plants() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-48 bg-gray-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-48 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
       ) : filtered.length === 0 ? (
@@ -87,7 +94,7 @@ export default function Plants() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((plant) => (
+          {filtered.map((plant: any) => (
             <PlantCard key={plant.id} plant={plant} />
           ))}
         </div>
@@ -96,22 +103,26 @@ export default function Plants() {
   );
 }
 
-function PlantCard({ plant }: { plant: SolarPlantWithStats }) {
+function PlantCard({ plant }: { plant: any }) {
   return (
     <Link to={`/sunflow/plants/${plant.id}`}>
       <Card className="hover:shadow-md transition-shadow h-full">
         <CardContent className="p-5">
           <div className="flex items-start justify-between mb-3">
             <div className="min-w-0">
-              <p className="font-semibold text-base truncate">{plant.name}</p>
-              <p className="text-xs text-muted-foreground font-mono">{plant.code}</p>
+              <p className="font-semibold text-base truncate">{plant.nome}</p>
+              {plant.serial_inversor && (
+                <p className="text-xs text-muted-foreground font-mono">{plant.serial_inversor}</p>
+              )}
             </div>
-            <StatusBadge context="plant" value={plant.status} className="ml-2 shrink-0" />
+            <StatusBadge context="plant" value={plant.ativo ? 'active' : 'inactive'} className="ml-2 shrink-0" />
           </div>
 
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-4">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{plant.city}, {plant.state}</span>
+            <span className="truncate">
+              {plant.cidade}{plant.estado ? `, ${plant.estado}` : ''}
+            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
@@ -120,30 +131,15 @@ function PlantCard({ plant }: { plant: SolarPlantWithStats }) {
                 <Zap className="h-3 w-3" />
                 <span className="text-xs">Capacidade</span>
               </div>
-              <p className="font-semibold">{formatCapacity(plant.capacity_kwp)}</p>
+              <p className="font-semibold">
+                {plant.potencia_kwp != null ? `${Number(plant.potencia_kwp).toFixed(0)} kWp` : '—'}
+              </p>
             </div>
             <div className="bg-muted/50 rounded-lg p-2.5">
-              <p className="text-xs text-muted-foreground mb-1">PR 7d</p>
-              <p className="font-semibold">{formatPerformanceRatio(plant.avg_pr_7d)}</p>
+              <p className="text-xs text-muted-foreground mb-1">Inversor</p>
+              <p className="font-semibold truncate">{plant.marca_inversor ?? '—'}</p>
             </div>
           </div>
-
-          {(plant.active_alerts > 0 || plant.open_work_orders > 0) && (
-            <div className="flex gap-3 mt-3 pt-3 border-t">
-              {plant.active_alerts > 0 && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                  <span className="text-red-600 font-medium">{plant.active_alerts} alert{plant.active_alerts !== 1 ? 'as' : 'a'}</span>
-                </div>
-              )}
-              {plant.open_work_orders > 0 && (
-                <div className="flex items-center gap-1.5 text-xs">
-                  <ClipboardList className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="text-blue-600 font-medium">{plant.open_work_orders} OS</span>
-                </div>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
     </Link>

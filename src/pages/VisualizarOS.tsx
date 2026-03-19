@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Download, ArrowLeft, FileText, Star } from "lucide-react";
@@ -45,7 +46,7 @@ const VisualizarOS = () => {
       setOS(osData);
       setTicket(osData.tickets);
     } catch (error: any) {
-      console.error('Erro ao carregar OS:', error);
+      logger.error('Erro ao carregar OS:', error);
       toast.error('Erro ao carregar Ordem de Serviço');
       navigate('/tickets');
     } finally {
@@ -86,7 +87,7 @@ const VisualizarOS = () => {
 
       toast.success('PDF gerado com sucesso!');
     } catch (error: any) {
-      console.error('Erro ao gerar PDF:', error);
+      logger.error('Erro ao gerar PDF:', error);
       toast.error('Erro ao gerar PDF');
     } finally {
       setGenerating(false);

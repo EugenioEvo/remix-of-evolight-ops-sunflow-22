@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from '@/services/api';
 import { optimizeRouteAdvanced } from '@/components/RouteOptimization';
 
 interface Ticket {
@@ -65,7 +66,7 @@ export const useRouteOptimization = () => {
       const [lat, lon] = t.coordenadas;
       const isValid = isValidCoordinate(lat, lon);
       if (!isValid) {
-        console.warn(`[RouteOpt] Coordenada inválida ignorada: ticket ${t.id}`, t.coordenadas);
+        logger.warn(`[RouteOpt] Coordenada inválida ignorada: ticket ${t.id}`, t.coordenadas);
       }
       return isValid;
     });
@@ -80,7 +81,7 @@ export const useRouteOptimization = () => {
     
     try {
       const totalWaypoints = validTickets.length + 1;
-      console.log(`[RouteOpt] Iniciando otimização: ${validTickets.length} tickets válidos de ${tickets.length} total`);
+      logger.info(`[RouteOpt] Iniciando otimização: ${validTickets.length} tickets válidos de ${tickets.length} total`);
 
       const coordinates = [
         {
@@ -102,58 +103,58 @@ export const useRouteOptimization = () => {
       let data: any, provider: Provider = 'local';
       
       // Tentar Mapbox primeiro
-      console.log(`[RouteOpt] Tentando Mapbox com ${coordinates.length} coordenadas...`);
+      logger.info(`[RouteOpt] Tentando Mapbox com ${coordinates.length} coordenadas...`);
       const mapboxStart = Date.now();
       try {
         const mapboxResult = await supabase.functions.invoke('mapbox-directions', {
           body: { coordinates }
         });
         
-        console.log(`[RouteOpt] Mapbox respondeu em ${Date.now() - mapboxStart}ms`);
+        logger.info(`[RouteOpt] Mapbox respondeu em ${Date.now() - mapboxStart}ms`);
         
         if (mapboxResult.error) {
-          console.warn('[RouteOpt] Mapbox invoke error:', mapboxResult.error);
+          logger.warn('[RouteOpt] Mapbox invoke error:', mapboxResult.error);
         } else if (mapboxResult.data?.success) {
           data = mapboxResult.data;
           provider = 'mapbox';
-          console.log(`[RouteOpt] ✅ Mapbox OK: ${data.route?.distanceKm} km`);
+          logger.info(`[RouteOpt] ✅ Mapbox OK: ${data.route?.distanceKm} km`);
         } else if (mapboxResult.data?.error?.includes('MAPBOX_ACCESS_TOKEN')) {
-          console.warn('[RouteOpt] Token Mapbox não configurado');
+          logger.warn('[RouteOpt] Token Mapbox não configurado');
         } else {
-          console.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
+          logger.warn('[RouteOpt] Mapbox fallback:', mapboxResult.data?.error);
         }
       } catch (err) {
-        console.warn('[RouteOpt] Mapbox exception:', err);
+        logger.warn('[RouteOpt] Mapbox exception:', err);
       }
 
       // Se Mapbox não funcionou, tentar OSRM
       if (!data?.success) {
-        console.log('[RouteOpt] Tentando OSRM...');
+        logger.info('[RouteOpt] Tentando OSRM...');
         const osrmStart = Date.now();
         try {
           const osrmResult = await supabase.functions.invoke('optimize-route-osrm', {
             body: { coordinates }
           });
           
-          console.log(`[RouteOpt] OSRM respondeu em ${Date.now() - osrmStart}ms`);
+          logger.info(`[RouteOpt] OSRM respondeu em ${Date.now() - osrmStart}ms`);
           
           if (osrmResult.error) {
-            console.warn('[RouteOpt] OSRM invoke error:', osrmResult.error);
+            logger.warn('[RouteOpt] OSRM invoke error:', osrmResult.error);
           } else if (osrmResult.data?.success) {
             data = osrmResult.data;
             provider = 'osrm';
-            console.log(`[RouteOpt] ✅ OSRM OK via ${osrmResult.data.server}: ${data.route?.distanceKm} km`);
+            logger.info(`[RouteOpt] ✅ OSRM OK via ${osrmResult.data.server}: ${data.route?.distanceKm} km`);
           } else {
-            console.warn('[RouteOpt] OSRM fallback:', osrmResult.data?.error);
+            logger.warn('[RouteOpt] OSRM fallback:', osrmResult.data?.error);
           }
         } catch (err) {
-          console.warn('[RouteOpt] OSRM exception:', err);
+          logger.warn('[RouteOpt] OSRM exception:', err);
         }
       }
 
       // Se APIs falharam, usar algoritmo local
       if (!data?.success) {
-        console.log('[RouteOpt] Usando algoritmo local (APIs indisponíveis)');
+        logger.info('[RouteOpt] Usando algoritmo local (APIs indisponíveis)');
         toast.warning('Usando otimização local (APIs indisponíveis)');
         
         const localOptimized = optimizeRouteAdvanced(tickets);
@@ -205,14 +206,14 @@ export const useRouteOptimization = () => {
           }, {
             onConflict: 'tecnico_id,data_rota'
           });
-          console.log('[RouteOpt] Rota persistida no banco');
+          logger.info('[RouteOpt] Rota persistida no banco');
         } catch (err) {
-          console.warn('[RouteOpt] Erro ao persistir rota:', err);
+          logger.warn('[RouteOpt] Erro ao persistir rota:', err);
         }
       }
 
       const elapsed = Date.now() - startTime;
-      console.log(`[RouteOpt] ✅ Completo em ${elapsed}ms via ${provider}`);
+      logger.info(`[RouteOpt] ✅ Completo em ${elapsed}ms via ${provider}`);
 
       return {
         tickets: reorderedTickets,
@@ -221,7 +222,7 @@ export const useRouteOptimization = () => {
       };
 
     } catch (err) {
-      console.error('[RouteOpt] Erro geral:', err);
+      logger.error('[RouteOpt] Erro geral:', err);
       toast.error('Erro ao otimizar rota, usando método local');
       
       const localOptimized = optimizeRouteAdvanced(tickets);

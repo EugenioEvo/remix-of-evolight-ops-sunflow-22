@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { logger } from '@/services/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -93,14 +94,14 @@ const Equipamentos = () => {
 
       if (error) {
         toast.error('Erro ao carregar equipamentos');
-        console.error('Error fetching equipamentos:', error);
+        logger.error('Error fetching equipamentos:', error);
         return;
       }
 
       setEquipamentos(data || []);
     } catch (error) {
       toast.error('Erro ao carregar equipamentos');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -120,13 +121,13 @@ const Equipamentos = () => {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching clientes:', error);
+        logger.error('Error fetching clientes:', error);
         return;
       }
 
       setClientes(data || []);
     } catch (error) {
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
@@ -146,7 +147,7 @@ const Equipamentos = () => {
 
         if (error) {
           toast.error('Erro ao atualizar equipamento');
-          console.error('Error updating equipamento:', error);
+          logger.error('Error updating equipamento:', error);
           return;
         }
 
@@ -165,7 +166,7 @@ const Equipamentos = () => {
 
         if (error) {
           toast.error('Erro ao criar equipamento');
-          console.error('Error creating equipamento:', error);
+          logger.error('Error creating equipamento:', error);
           return;
         }
 
@@ -178,7 +179,7 @@ const Equipamentos = () => {
       fetchEquipamentos();
     } catch (error) {
       toast.error('Erro ao salvar equipamento');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
@@ -197,7 +198,7 @@ const Equipamentos = () => {
 
       if (error) {
         toast.error('Erro ao remover equipamento');
-        console.error('Error deleting equipamento:', error);
+        logger.error('Error deleting equipamento:', error);
         return;
       }
 
@@ -205,7 +206,7 @@ const Equipamentos = () => {
       fetchEquipamentos();
     } catch (error) {
       toast.error('Erro ao remover equipamento');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 

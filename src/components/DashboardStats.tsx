@@ -1,113 +1,57 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle, CheckCircle, Clock, FileText, Wrench, ClipboardCheck } from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useDashboardStats } from '@/hooks/queries/useDashboard';
 
 const DashboardStats = () => {
-  const { profile } = useAuth();
-  const [stats, setStats] = useState({
-    ticketsAbertos: 0,
-    ticketsCriticos: 0,
-    ticketsHoje: 0,
-    osGeradas: 0,
-    emExecucao: 0,
-    concluidos: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  const loadStats = async () => {
-    try {
-      setLoading(true);
-      
-      // Chamar RPC que retorna todas as estatísticas de uma vez
-      const { data, error } = await supabase.rpc('get_dashboard_stats');
-
-      if (error) {
-        console.error('Erro ao carregar estatísticas:', error);
-        return;
-      }
-
-      if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const statsData = data as {
-          tickets_abertos: number;
-          tickets_criticos: number;
-          tickets_hoje: number;
-          os_geradas: number;
-          em_execucao: number;
-          concluidos: number;
-        };
-
-        setStats({
-          ticketsAbertos: statsData.tickets_abertos || 0,
-          ticketsCriticos: statsData.tickets_criticos || 0,
-          ticketsHoje: statsData.tickets_hoje || 0,
-          osGeradas: statsData.os_geradas || 0,
-          emExecucao: statsData.em_execucao || 0,
-          concluidos: statsData.concluidos || 0,
-        });
-      }
-    } catch (error) {
-      console.error('Erro ao carregar estatísticas:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadStats();
-    
-    // Atualizar stats a cada 30 segundos
-    const interval = setInterval(loadStats, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const { data: stats, isLoading } = useDashboardStats();
 
   const statsConfig = [
     {
       title: "Tickets Abertos",
-      value: stats.ticketsAbertos,
+      value: stats?.ticketsAbertos ?? 0,
       icon: Clock,
       className: "bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200",
       iconColor: "text-primary"
     },
     {
       title: "Críticos/Urgentes", 
-      value: stats.ticketsCriticos,
+      value: stats?.ticketsCriticos ?? 0,
       icon: AlertTriangle,
       className: "bg-gradient-to-br from-red-50 to-red-100 border-red-200",
       iconColor: "text-destructive"
     },
     {
       title: "Finalizados Hoje",
-      value: stats.ticketsHoje,
+      value: stats?.ticketsHoje ?? 0,
       icon: CheckCircle,
       className: "bg-gradient-to-br from-green-50 to-green-100 border-green-200", 
       iconColor: "text-success"
     },
     {
       title: "OS Geradas Hoje",
-      value: stats.osGeradas,
+      value: stats?.osGeradas ?? 0,
       icon: FileText,
       className: "bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200",
       iconColor: "text-purple-600"
     },
     {
       title: "Em Execução",
-      value: stats.emExecucao,
+      value: stats?.emExecucao ?? 0,
       icon: Wrench,
       className: "bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200",
       iconColor: "text-secondary"
     },
     {
       title: "Total Concluídos",
-      value: stats.concluidos,
+      value: stats?.concluidos ?? 0,
       icon: ClipboardCheck,
       className: "bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200",
       iconColor: "text-teal-600"
     }
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from '@/services/api';
 import { format } from 'date-fns';
 
 interface ScheduleParams {
@@ -35,7 +36,7 @@ export const useSchedule = () => {
       if (error) throw error;
       return result as boolean;
     } catch (error) {
-      console.error('Erro ao verificar conflito:', error);
+      logger.error('Erro ao verificar conflito:', error);
       return false;
     }
   };
@@ -146,7 +147,7 @@ export const useSchedule = () => {
             description: `OS ${isUpdate ? 'reagendada' : 'agendada'} para ${format(params.data, 'dd/MM/yyyy')} às ${params.horaInicio}. Convites enviados!`
           });
         } catch (emailError: any) {
-          console.error('Erro ao enviar convite:', emailError);
+          logger.error('Erro ao enviar convite:', emailError);
           // Registrar erro no log da OS
           try {
             const { data: currentOS } = await supabase
@@ -172,7 +173,7 @@ export const useSchedule = () => {
               .update({ email_error_log: errorLog })
               .eq('id', params.osId);
           } catch (logError) {
-            console.error('Erro ao registrar log:', logError);
+            logger.error('Erro ao registrar log:', logError);
           }
 
           toast({
@@ -192,7 +193,7 @@ export const useSchedule = () => {
 
       return true;
     } catch (error: any) {
-      console.error('Erro ao agendar OS:', error);
+      logger.error('Erro ao agendar OS:', error);
       toast({
         title: 'Erro ao agendar',
         description: error.message,

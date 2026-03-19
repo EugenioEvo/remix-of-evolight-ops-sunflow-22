@@ -1,7 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,6 +18,8 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useWorkOrdersQuery, useDeleteWorkOrder, useSendCalendarInvite } from "@/hooks/useWorkOrdersQuery";
+import { useClientesQuery } from "@/hooks/useTicketsQuery";
 
 interface WorkOrder {
   id: string;
@@ -67,74 +67,27 @@ const prioridadeConfig: Record<string, { label: string; color: string }> = {
 };
 
 const WorkOrders = () => {
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [clienteFilter, setClienteFilter] = useState<string>("all");
   const [ufvSolarzFilter, setUfvSolarzFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
-  const [clientes, setClientes] = useState<{ id: string; empresa: string }[]>([]);
 
   const { profile } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
 
+  const { data: workOrders = [], isLoading: loading } = useWorkOrdersQuery();
+  const { data: clientes = [] } = useClientesQuery();
+  const deleteOSMutation = useDeleteWorkOrder();
+  const sendEmailMutation = useSendCalendarInvite();
+
   const canManageOS = profile?.role === "admin" || profile?.role === "area_tecnica";
-
-  useEffect(() => {
-    loadWorkOrders();
-    loadClientes();
-  }, []);
-
-  const loadWorkOrders = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("ordens_servico")
-        .select(`
-          *,
-          tickets!inner(
-            id, titulo, status, prioridade, endereco_servico,
-            clientes(empresa, ufv_solarz, prioridade)
-          ),
-          rme_relatorios(id, status)
-        `)
-        .order("data_emissao", { ascending: false });
-
-      if (error) throw error;
-
-      const parsed = (data || []).map((os: any) => ({
-        ...os,
-        work_type: os.work_type || [],
-        rme_relatorios: os.rme_relatorios || [],
-      }));
-
-      setWorkOrders(parsed);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao carregar ordens de serviço",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadClientes = async () => {
-    const { data } = await supabase
-      .from("clientes")
-      .select("id, empresa")
-      .order("empresa");
-    setClientes(data || []);
-  };
 
   // Extrair opções únicas de UFV/SolarZ
   const ufvSolarzOptions = useMemo(() => {
     const ufvSet = new Set<string>();
-    workOrders.forEach(os => {
+    workOrders.forEach((os: any) => {
       if (os.tickets.clientes?.ufv_solarz) {
         ufvSet.add(os.tickets.clientes.ufv_solarz);
       }
@@ -143,7 +96,7 @@ const WorkOrders = () => {
   }, [workOrders]);
 
   const filteredOrders = useMemo(() => {
-    return workOrders.filter((os) => {
+    return workOrders.filter((os: any) => {
       const matchesSearch =
         searchTerm === "" ||
         os.numero_os.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -179,20 +132,20 @@ const WorkOrders = () => {
   const stats = useMemo(() => {
     const total = workOrders.length;
     const abertas = workOrders.filter(
-      (os) => !["concluido", "cancelado", "em_execucao"].includes(os.tickets.status)
+      (os: any) => !["concluido", "cancelado", "em_execucao"].includes(os.tickets.status)
     ).length;
-    const emExecucao = workOrders.filter((os) => os.tickets.status === "em_execucao").length;
-    const atrasadas = workOrders.filter((os) => {
+    const emExecucao = workOrders.filter((os: any) => os.tickets.status === "em_execucao").length;
+    const atrasadas = workOrders.filter((os: any) => {
       if (!os.data_programada) return false;
       return new Date(os.data_programada) < new Date() && 
         !["concluido", "cancelado"].includes(os.tickets.status);
     }).length;
-    const concluidas = workOrders.filter((os) => os.tickets.status === "concluido").length;
+    const concluidas = workOrders.filter((os: any) => os.tickets.status === "concluido").length;
 
     return { total, abertas, emExecucao, atrasadas, concluidas };
   }, [workOrders]);
 
-  const getOSStatus = (os: WorkOrder) => {
+  const getOSStatus = (os: any) => {
     const ticketStatus = os.tickets.status;
     if (ticketStatus === "concluido") return "concluida";
     if (ticketStatus === "em_execucao") return "em_execucao";
@@ -200,67 +153,20 @@ const WorkOrders = () => {
     return "aberta";
   };
 
-  const hasRME = (os: WorkOrder) => os.rme_relatorios && os.rme_relatorios.length > 0;
-  const isRMECompleted = (os: WorkOrder) =>
-    os.rme_relatorios?.some((r) => r.status === "concluido");
+  const hasRME = (os: any) => os.rme_relatorios && os.rme_relatorios.length > 0;
+  const isRMECompleted = (os: any) =>
+    os.rme_relatorios?.some((r: any) => r.status === "concluido");
 
   const handleDeleteOS = async (e: React.MouseEvent, osId: string, ticketId: string) => {
     e.stopPropagation();
-    try {
-      setLoading(true);
-
-      const { error: osError } = await supabase
-        .from("ordens_servico")
-        .delete()
-        .eq("id", osId);
-
-      if (osError) throw osError;
-
-      const { error: ticketError } = await supabase
-        .from("tickets")
-        .update({ status: "aprovado" })
-        .eq("id", ticketId);
-
-      if (ticketError) throw ticketError;
-
-      toast({
-        title: "OS excluída",
-        description: "Ordem de serviço excluída e ticket revertido para aprovado.",
-      });
-
-      loadWorkOrders();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao excluir OS",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    deleteOSMutation.mutate({ osId, ticketId });
   };
 
   const handleSendEmail = async (e: React.MouseEvent, osId: string) => {
     e.stopPropagation();
     setSendingEmailId(osId);
     try {
-      const { data, error } = await supabase.functions.invoke("send-calendar-invite", {
-        body: { os_id: osId, action: "create" },
-      });
-
-      if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Erro ao enviar email");
-
-      toast({
-        title: "Email enviado!",
-        description: `Convite enviado para: ${data.recipients?.join(", ")}`,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error.message,
-        variant: "destructive",
-      });
+      await sendEmailMutation.mutateAsync(osId);
     } finally {
       setSendingEmailId(null);
     }
@@ -396,7 +302,7 @@ const WorkOrders = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos clientes</SelectItem>
-                {clientes.map((c) => (
+                {clientes.map((c: any) => (
                   <SelectItem key={c.id} value={c.empresa || c.id}>
                     {c.empresa || "Sem nome"}
                   </SelectItem>
@@ -464,7 +370,7 @@ const WorkOrders = () => {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filteredOrders.map((os) => {
+          {filteredOrders.map((os: any) => {
             const status = getOSStatus(os);
             const config = statusConfig[status];
             const StatusIcon = config.icon;
@@ -548,7 +454,7 @@ const WorkOrders = () => {
                   {/* Work Type Tags */}
                   {os.work_type && os.work_type.length > 0 && (
                     <div className="flex flex-wrap gap-1">
-                      {os.work_type.slice(0, 3).map((tipo) => (
+                      {os.work_type.slice(0, 3).map((tipo: string) => (
                         <Badge key={tipo} variant="outline" className="text-[10px]">
                           {tipo.toUpperCase()}
                         </Badge>

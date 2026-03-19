@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from '@/services/api';
 
 const especialidadesOptions = [
   "Sistemas Fotovoltaicos",
@@ -104,14 +105,14 @@ const Prestadores = () => {
 
       if (error) {
         toast.error('Erro ao carregar prestadores');
-        console.error('Error fetching prestadores:', error);
+        logger.error('Error fetching prestadores:', error);
         return;
       }
 
       setPrestadores(data || []);
     } catch (error) {
       toast.error('Erro ao carregar prestadores');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -132,7 +133,7 @@ const Prestadores = () => {
 
         if (error) {
           toast.error('Erro ao atualizar prestador');
-          console.error('Error updating prestador:', error);
+          logger.error('Error updating prestador:', error);
           return;
         }
 
@@ -151,7 +152,7 @@ const Prestadores = () => {
 
         if (error) {
           toast.error('Erro ao criar prestador');
-          console.error('Error creating prestador:', error);
+          logger.error('Error creating prestador:', error);
           return;
         }
 
@@ -164,7 +165,7 @@ const Prestadores = () => {
       fetchPrestadores();
     } catch (error) {
       toast.error('Erro ao salvar prestador');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
@@ -183,7 +184,7 @@ const Prestadores = () => {
 
       if (error) {
         toast.error('Erro ao remover prestador');
-        console.error('Error deleting prestador:', error);
+        logger.error('Error deleting prestador:', error);
         return;
       }
 
@@ -191,7 +192,7 @@ const Prestadores = () => {
       fetchPrestadores();
     } catch (error) {
       toast.error('Erro ao remover prestador');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     }
   };
 
