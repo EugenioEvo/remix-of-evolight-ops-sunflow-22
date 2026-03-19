@@ -18,6 +18,7 @@ function solarzHeaders(username: string, password: string): Record<string, strin
   return {
     'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   }
 }
 
