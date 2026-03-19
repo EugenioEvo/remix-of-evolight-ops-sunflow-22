@@ -91,22 +91,13 @@ serve(async (req) => {
   try {
     // ── 1. Validate env ──────────────────────────────────
     const SOLARZ_API_URL = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
-    const SOLARZ_USERNAME = Deno.env.get('SOLARZ_USERNAME')
-    const SOLARZ_PASSWORD = Deno.env.get('SOLARZ_PASSWORD')
-    const SOLARZ_PROXY_URL = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null
-    const SOLARZ_PROXY_SECRET = Deno.env.get('SOLARZ_PROXY_SECRET') || null
+    const SOLARZ_PROXY_SECRET = Deno.env.get('SOLARZ_PROXY_SECRET')
 
-    if (!SOLARZ_API_URL || !SOLARZ_USERNAME || !SOLARZ_PASSWORD) {
-      throw new Error('SolarZ credentials not configured (SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD)')
+    if (!SOLARZ_API_URL || !SOLARZ_PROXY_SECRET) {
+      throw new Error('SOLARZ_API_URL and SOLARZ_PROXY_SECRET must be configured')
     }
 
-    const headers = buildHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD, SOLARZ_PROXY_SECRET, SOLARZ_PROXY_URL)
-    const useProxy = !!SOLARZ_PROXY_URL
-
-    console.log('SolarZ API URL:', SOLARZ_API_URL)
-    console.log('Using proxy:', useProxy ? SOLARZ_PROXY_URL : 'NO (direct)')
-    const firstUrl = buildRequestUrl(SOLARZ_API_URL, SOLARZ_PROXY_URL, '/openApi/seller/plantWithInfos/list?page=1&pageSize=100')
-    console.log('First request URL:', firstUrl)
+    console.log('SolarZ Worker URL:', SOLARZ_API_URL)
 
     // ── 2. Fetch ALL plants from SolarZ (paginated) ──────
     let allSolarzPlants: any[] = []
