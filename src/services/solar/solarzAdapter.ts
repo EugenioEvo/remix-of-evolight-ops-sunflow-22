@@ -89,40 +89,32 @@ export class SolarzAdapter implements ISolarMonitoringSource {
   readonly providerName = 'SolarZ';
 
   private baseUrl: string;
-  private username: string;
-  private password: string;
+  private proxySecret: string;
 
-  constructor(config: { baseUrl: string; username: string; password: string }) {
+  constructor(config: { baseUrl: string; proxySecret: string }) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
-    this.username = config.username;
-    this.password = config.password;
+    this.proxySecret = config.proxySecret;
   }
 
-  // ── Auth (Basic Auth — no login endpoint) ──────────────
+  // ── Auth (handled by Cloudflare Worker proxy) ──────────
 
   async authenticate(): Promise<void> {
-    // Basic Auth doesn't require a login step — credentials are sent with every request.
-    // This method exists to satisfy the ISolarMonitoringSource interface.
-    logger.info('[SolarZ] Using Basic Auth (no login required)');
+    logger.info('[SolarZ] Using Cloudflare Worker proxy (no direct auth needed)');
   }
 
-  private getAuthHeaders(): Record<string, string> {
-    const credentials = btoa(`${this.username}:${this.password}`);
+  private getProxyHeaders(): Record<string, string> {
     return {
-      'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'User-Agent': 'Evolight-JARVIS/1.0',
-      'X-Requested-With': 'XMLHttpRequest',
+      'X-Proxy-Secret': this.proxySecret,
     };
   }
 
   private async authedFetch(path: string, init?: RequestInit): Promise<Response> {
     return fetch(`${this.baseUrl}${path}`, {
       ...init,
-      redirect: 'manual',
       headers: {
-        ...this.getAuthHeaders(),
+        ...this.getProxyHeaders(),
         ...(init?.headers ?? {}),
       },
     });
