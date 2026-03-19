@@ -156,11 +156,10 @@ export class SolarzAdapter implements ISolarMonitoringSource {
 
   private normalizePlant(r: SolarzRawPlant): SolarPlant {
     const statusMap: Record<string, SolarPlant['status']> = {
-      NORMAL: 'online',
-      ONLINE: 'online',
-      OFFLINE: 'offline',
-      ALERT: 'alert',
-      WARNING: 'alert',
+      OK: 'online',
+      ALERTA: 'alert',
+      CRITICO: 'offline',
+      DESCONHECIDO: 'unknown',
     };
     return {
       externalId: String(r.id),
