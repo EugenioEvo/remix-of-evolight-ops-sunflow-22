@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import { useCallback } from 'react';
 
 interface ErrorHandlerOptions {
