@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import logger from '@/lib/logger';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -82,7 +83,7 @@ export const EquipmentQuickAdd = ({
       onSuccess(newEquipment.id);
       onClose();
     } catch (error: any) {
-      console.error('Erro ao cadastrar equipamento:', error);
+      logger.error('Erro ao cadastrar equipamento:', error);
       toast({
         title: 'Erro',
         description: error.message || 'Erro ao cadastrar equipamento',

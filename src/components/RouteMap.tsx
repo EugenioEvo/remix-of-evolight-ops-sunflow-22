@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import logger from '@/lib/logger';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -87,7 +88,7 @@ const RouteMap: React.FC = () => {
         .limit(1);
 
       if (error) {
-        console.warn('⚠️ Erro ao carregar rota persistida:', error);
+        logger.warn('⚠️ Erro ao carregar rota persistida:', error);
         return;
       }
 
@@ -196,7 +197,7 @@ const RouteMap: React.FC = () => {
 
       setOrdensServico(filteredData);
     } catch (error) {
-      console.error('Erro ao carregar ordens de serviço:', error);
+      logger.error('Erro ao carregar ordens de serviço:', error);
     } finally {
       setLoading(false);
     }
@@ -414,7 +415,7 @@ const RouteMap: React.FC = () => {
       if (error) throw error;
       toast.success("Ordem das paradas salva!");
     } catch (err) {
-      console.error('Erro ao persistir ordem:', err);
+      logger.error('Erro ao persistir ordem:', err);
       toast.error("Erro ao salvar ordem no banco");
     }
   }, [rotasOtimizadas]);

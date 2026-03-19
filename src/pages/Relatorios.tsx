@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -130,7 +131,7 @@ const Relatorios = () => {
       setClientes(clientesData || []);
 
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      logger.error('Erro ao carregar dados:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar dados dos relatórios',

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import logger from '@/lib/logger';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -88,7 +89,7 @@ export function BulkImportDialog({ open, onOpenChange, onImportComplete }: BulkI
       setValidatedData(validated);
       setStep('preview');
     } catch (error) {
-      console.error('Erro ao processar arquivo:', error);
+      logger.error('Erro ao processar arquivo:', error);
       toast.error('Erro ao processar arquivo');
     }
   };

@@ -1,3 +1,4 @@
+import logger from '@/lib/logger';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,7 +69,7 @@ export const PresenceConfirmationStatus = ({
 
       setQrCodeDataURL(qrDataURL);
     } catch (error) {
-      console.error('Erro ao gerar QR Code:', error);
+      logger.error('Erro ao gerar QR Code:', error);
     }
   };
 

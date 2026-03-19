@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import logger from '@/lib/logger';
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -113,7 +114,7 @@ export default function DashboardPresenca() {
       if (error) throw error;
       setTecnicos((data || []) as Tecnico[]);
     } catch (error) {
-      console.error("Erro ao carregar técnicos:", error);
+      logger.error("Erro ao carregar técnicos:", error);
     }
   };
 
@@ -183,7 +184,7 @@ export default function DashboardPresenca() {
       previousOSRef.current = currentOSMap;
       setOrdensServico(ordensServicoData);
     } catch (error) {
-      console.error("Erro ao carregar ordens de serviço:", error);
+      logger.error("Erro ao carregar ordens de serviço:", error);
       toast.error("Erro ao carregar ordens de serviço");
     } finally {
       setLoading(false);
@@ -365,7 +366,7 @@ export default function DashboardPresenca() {
       doc.save(`confirmacoes_presenca_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("PDF exportado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar PDF:", error);
+      logger.error("Erro ao exportar PDF:", error);
       toast.error("Erro ao exportar PDF");
     } finally {
       setExporting(false);
@@ -440,7 +441,7 @@ export default function DashboardPresenca() {
       XLSX.writeFile(workbook, `confirmacoes_presenca_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Excel exportado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar Excel:", error);
+      logger.error("Erro ao exportar Excel:", error);
       toast.error("Erro ao exportar Excel");
     } finally {
       setExporting(false);

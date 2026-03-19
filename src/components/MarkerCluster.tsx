@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import logger from '@/lib/logger';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet.markercluster';
@@ -112,7 +113,7 @@ const MarkerCluster: React.FC<MarkerClusterProps> = ({ markers, disableClusterin
       clusterGroupRef.current = clusterGroup;
       map.addLayer(clusterGroup);
     } catch (error) {
-      console.error('MarkerCluster error:', error);
+      logger.error('MarkerCluster error:', error);
     }
 
     // Cleanup on unmount

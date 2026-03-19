@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import logger from '@/lib/logger';
 
 interface OSData {
   numero_os: string;
@@ -35,7 +36,7 @@ export const generateOSPDF = async (osData: OSData): Promise<Blob> => {
     const logoImg = await loadImage('/images/evolight-logo.jpg');
     doc.addImage(logoImg, 'JPEG', margin + 2, margin + 2, 50, 20);
   } catch (error) {
-    console.warn('Logo não carregado, continuando sem logo');
+    logger.warn('Logo não carregado, continuando sem logo');
   }
 
   // Título

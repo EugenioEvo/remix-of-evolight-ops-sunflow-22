@@ -1,4 +1,5 @@
 import React from 'react';
+import logger from '@/lib/logger';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -22,7 +23,7 @@ class MapErrorBoundary extends React.Component<
   }
   
   componentDidCatch(error: any, info: any) {
-    console.error('MapErrorBoundary caught error:', error, info);
+    logger.error('MapErrorBoundary caught error:', error, info);
   }
   
   handleReset = () => {

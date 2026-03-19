@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/lib/logger';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -178,7 +179,7 @@ const Auth = () => {
         const { error: profileError } = await supabase.functions.invoke('create-user-profile');
         
         if (profileError) {
-          console.error('Erro ao criar perfil:', profileError);
+          logger.error('Erro ao criar perfil:', profileError);
         }
 
         // Aguardar profile ser criado com polling (máximo 3 segundos)

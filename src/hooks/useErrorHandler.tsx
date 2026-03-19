@@ -1,4 +1,5 @@
 import { useToast } from '@/hooks/use-toast';
+import logger from '@/lib/logger';
 import { useCallback } from 'react';
 
 interface ErrorHandlerOptions {
@@ -51,7 +52,7 @@ export const useErrorHandler = () => {
 
     // Log in development only
     if (logError) {
-      console.error('[Error]', appError);
+      logger.error('[Error]', appError);
     }
 
     // Show toast notification
