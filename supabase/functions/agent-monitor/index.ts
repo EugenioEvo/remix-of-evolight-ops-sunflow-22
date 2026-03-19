@@ -16,16 +16,33 @@ function solarzHeaders(username: string, password: string): Record<string, strin
     'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'User-Agent': 'Evolight-JARVIS/1.0',
+    'X-Requested-With': 'XMLHttpRequest',
   }
 }
 
 async function solarzGet(url: string, headers: Record<string, string>) {
-  const res = await fetch(url, { headers })
-  const contentType = res.headers.get('content-type') || ''
-  if (!res.ok) throw new Error(`SolarZ GET ${url} failed: ${res.status}`)
-  if (!contentType.includes('application/json')) {
-    throw new Error(`SolarZ returned non-JSON (${contentType}). Check credentials and URL.`)
+  const res = await fetch(url, { headers, redirect: 'manual' })
+
+  if (res.status >= 300 && res.status < 400) {
+    const location = res.headers.get('location')
+    console.warn(`SolarZ redirect ${res.status} → ${location}`)
+    if (location) {
+      const redirectRes = await fetch(location, { headers })
+      return redirectRes.json()
+    }
   }
+
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    const body = await res.text()
+    console.error(`SolarZ non-JSON response from ${url}:`,
+      `status=${res.status}`, `content-type=${contentType}`,
+      `body_preview=${body.substring(0, 300)}`)
+    throw new Error(`SolarZ returned ${contentType} instead of JSON from ${url}`)
+  }
+
+  if (!res.ok) throw new Error(`SolarZ GET ${url} failed: ${res.status}`)
   return res.json()
 }
 
@@ -34,12 +51,28 @@ async function solarzPost(url: string, headers: Record<string, string>, body?: a
     method: 'POST',
     headers,
     body: body ? JSON.stringify(body) : undefined,
+    redirect: 'manual',
   })
-  const contentType = res.headers.get('content-type') || ''
-  if (!res.ok) throw new Error(`SolarZ POST ${url} failed: ${res.status}`)
-  if (!contentType.includes('application/json')) {
-    throw new Error(`SolarZ returned non-JSON (${contentType}). Check credentials and URL.`)
+
+  if (res.status >= 300 && res.status < 400) {
+    const location = res.headers.get('location')
+    console.warn(`SolarZ redirect ${res.status} → ${location}`)
+    if (location) {
+      const redirectRes = await fetch(location, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined })
+      return redirectRes.json()
+    }
   }
+
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    const body_text = await res.text()
+    console.error(`SolarZ non-JSON response from ${url}:`,
+      `status=${res.status}`, `content-type=${contentType}`,
+      `body_preview=${body_text.substring(0, 300)}`)
+    throw new Error(`SolarZ returned ${contentType} instead of JSON from ${url}`)
+  }
+
+  if (!res.ok) throw new Error(`SolarZ POST ${url} failed: ${res.status}`)
   return res.json()
 }
 
@@ -95,6 +128,9 @@ serve(async (req) => {
     }
 
     const headers = solarzHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD)
+
+    console.log('SolarZ API URL:', SOLARZ_API_URL)
+    console.log('First request URL:', `${SOLARZ_API_URL}/openApi/seller/plantWithInfos/list?page=1&pageSize=100`)
 
     // ── 2. Fetch ALL plants from SolarZ (paginated) ──────
     let allSolarzPlants: any[] = []

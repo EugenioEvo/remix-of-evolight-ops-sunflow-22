@@ -19,6 +19,8 @@ function solarzHeaders(username: string, password: string): Record<string, strin
     'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'User-Agent': 'Evolight-JARVIS/1.0',
+    'X-Requested-With': 'XMLHttpRequest',
   }
 }
 

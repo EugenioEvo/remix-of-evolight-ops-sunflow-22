@@ -112,12 +112,15 @@ export class SolarzAdapter implements ISolarMonitoringSource {
       'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'User-Agent': 'Evolight-JARVIS/1.0',
+      'X-Requested-With': 'XMLHttpRequest',
     };
   }
 
   private async authedFetch(path: string, init?: RequestInit): Promise<Response> {
     return fetch(`${this.baseUrl}${path}`, {
       ...init,
+      redirect: 'manual',
       headers: {
         ...this.getAuthHeaders(),
         ...(init?.headers ?? {}),
