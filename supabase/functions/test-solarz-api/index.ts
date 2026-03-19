@@ -221,10 +221,10 @@ serve(async (req) => {
     // Step 3: Detailed tests for a specific plant
     if (plantId && ['all', 'metrics'].includes(testMode)) {
       const [statusResult, powerResult, perfResult, energyResult] = await Promise.all([
-        testStatus(baseUrl, headers, plantId),
-        testPower(baseUrl, headers, plantId),
-        testPerformance(baseUrl, headers, plantId),
-        testEnergy(baseUrl, headers, plantId),
+        testStatus(effectiveBase, headers, plantId),
+        testPower(effectiveBase, headers, plantId),
+        testPerformance(effectiveBase, headers, plantId),
+        testEnergy(effectiveBase, headers, plantId),
       ])
       results.push(statusResult, powerResult, perfResult, energyResult)
     }
