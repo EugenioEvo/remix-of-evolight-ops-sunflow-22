@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.agent-dispatcher]
 verify_jwt = false
+
+[functions.jarvis-orchestrator]
+verify_jwt = false
