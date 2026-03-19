@@ -2,3 +2,6 @@ project_id = "syozyhaqwyjloxnpfrsw"
 
 [functions.agent-monitor]
 verify_jwt = false
+
+[functions.agent-dispatcher]
+verify_jwt = false
