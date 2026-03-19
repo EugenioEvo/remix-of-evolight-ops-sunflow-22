@@ -86,6 +86,10 @@ const RMEWizard = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const createRME = useCreateRME();
+  const updateRME = useUpdateRME();
+  const populateChecklist = usePopulateChecklist();
+  const updateChecklistItemMutation = useUpdateChecklistItem();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
