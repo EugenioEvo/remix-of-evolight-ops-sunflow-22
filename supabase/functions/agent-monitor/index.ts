@@ -8,6 +8,29 @@ const corsHeaders = {
 
 const LOW_GENERATION_RATIO = 0.70
 
+// ── Proxy support ───────────────────────────────────────────
+// If SOLARZ_PROXY_URL is set, all requests go through the Cloudflare Worker proxy
+// instead of hitting the SolarZ API directly (avoids IP blocking).
+
+function buildRequestUrl(baseUrl: string, proxyUrl: string | null, path: string): string {
+  if (proxyUrl) {
+    return `${proxyUrl}${path}`
+  }
+  return `${baseUrl}${path}`
+}
+
+function buildHeaders(username: string, password: string, proxySecret: string | null, proxyUrl: string | null): Record<string, string> {
+  if (proxyUrl && proxySecret) {
+    // When using proxy, auth is handled by the proxy itself
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-Proxy-Secret': proxySecret,
+    }
+  }
+  return solarzHeaders(username, password)
+}
+
 // ── SolarZ API helpers (Basic Auth) ─────────────────────────
 
 function solarzHeaders(username: string, password: string): Record<string, string> {
