@@ -43,7 +43,7 @@ export function useCreateTicket() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: (data: TicketInsert) => ticketService.create(data),
+    mutationFn: (data: TicketInsert | Record<string, any>) => ticketService.create(data as TicketInsert),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });
       toast({ title: 'Sucesso', description: 'Ticket criado com sucesso!' });
