@@ -19,7 +19,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useWorkOrdersQuery, useDeleteWorkOrder, useSendCalendarInvite } from "@/hooks/useWorkOrdersQuery";
-import { useClientesQuery } from "@/hooks/useTicketsQuery";
+import { useClientes } from "@/hooks/queries";
 
 interface WorkOrder {
   id: string;
@@ -78,7 +78,7 @@ const WorkOrders = () => {
   const navigate = useNavigate();
 
   const { data: workOrders = [], isLoading: loading } = useWorkOrdersQuery();
-  const { data: clientes = [] } = useClientesQuery();
+  const { data: clientes = [] } = useClientes();
   const deleteOSMutation = useDeleteWorkOrder();
   const sendEmailMutation = useSendCalendarInvite();
 
