@@ -145,15 +145,20 @@ serve(async (req) => {
     const SOLARZ_API_URL = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
     const SOLARZ_USERNAME = Deno.env.get('SOLARZ_USERNAME')
     const SOLARZ_PASSWORD = Deno.env.get('SOLARZ_PASSWORD')
+    const SOLARZ_PROXY_URL = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null
+    const SOLARZ_PROXY_SECRET = Deno.env.get('SOLARZ_PROXY_SECRET') || null
 
     if (!SOLARZ_API_URL || !SOLARZ_USERNAME || !SOLARZ_PASSWORD) {
       throw new Error('SolarZ credentials not configured (SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD)')
     }
 
-    const headers = solarzHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD)
+    const headers = buildHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD, SOLARZ_PROXY_SECRET, SOLARZ_PROXY_URL)
+    const useProxy = !!SOLARZ_PROXY_URL
 
     console.log('SolarZ API URL:', SOLARZ_API_URL)
-    console.log('First request URL:', `${SOLARZ_API_URL}/openApi/seller/plantWithInfos/list?page=1&pageSize=100`)
+    console.log('Using proxy:', useProxy ? SOLARZ_PROXY_URL : 'NO (direct)')
+    const firstUrl = buildRequestUrl(SOLARZ_API_URL, SOLARZ_PROXY_URL, '/openApi/seller/plantWithInfos/list?page=1&pageSize=100')
+    console.log('First request URL:', firstUrl)
 
     // ── 2. Fetch ALL plants from SolarZ (paginated) ──────
     let allSolarzPlants: any[] = []
