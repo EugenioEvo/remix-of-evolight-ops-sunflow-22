@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import logger from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
