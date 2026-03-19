@@ -242,8 +242,7 @@ serve(async (req) => {
         // ── 4c. Save metrics ─────────────────────────────
         try {
           const powerData = await solarzGet(
-            buildRequestUrl(SOLARZ_API_URL, SOLARZ_PROXY_URL, `/openApi/seller/plant/power?id=${szPlant.id}`),
-            headers,
+            `${SOLARZ_API_URL}/openApi/seller/plant/power?id=${szPlant.id}`,
           )
 
           await supabaseAdmin.from('solar_metrics').insert([{
