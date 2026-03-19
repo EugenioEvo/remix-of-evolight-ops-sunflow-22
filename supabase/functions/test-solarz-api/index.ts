@@ -160,25 +160,22 @@ serve(async (req) => {
     if (baseUrl && !baseUrl.startsWith('http')) {
       baseUrl = 'https://' + baseUrl
     }
-    const username = Deno.env.get('SOLARZ_USERNAME') ?? ''
-    const password = Deno.env.get('SOLARZ_PASSWORD') ?? ''
-    const proxyUrl = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null
     const proxySecret = Deno.env.get('SOLARZ_PROXY_SECRET') || null
 
-    if (!baseUrl || !username || !password) {
+    if (!baseUrl) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing secrets. Required: SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD',
-        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_USERNAME: !!username, SOLARZ_PASSWORD: !!password, SOLARZ_PROXY_URL: !!proxyUrl },
+        error: 'Missing secret: SOLARZ_API_URL',
+        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_PROXY_SECRET: !!proxySecret },
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // If proxy is configured, use proxy headers; otherwise direct
-    const headers = proxyUrl && proxySecret
+    // Use proxy headers (same approach as agent-monitor)
+    const headers = proxySecret
       ? { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Proxy-Secret': proxySecret }
-      : solarzHeaders(username, password)
+      : solarzHeaders(Deno.env.get('SOLARZ_USERNAME') ?? '', Deno.env.get('SOLARZ_PASSWORD') ?? '')
 
-    const effectiveBase = proxyUrl || baseUrl
+    const effectiveBase = baseUrl
 
     let testMode = 'all'
     let plantId: string | undefined
