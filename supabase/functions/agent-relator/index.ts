@@ -78,8 +78,8 @@ function calculatePlantKPIs(
 // ── AI report generation ────────────────────────────────────
 
 async function generateReportText(kpis: PlantKPIs[], mes: number, ano: number, clienteName: string): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-  if (!LOVABLE_API_KEY) {
+  const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!ANTHROPIC_API_KEY) {
     return buildFallbackReport(kpis, mes, ano, clienteName)
   }
 
@@ -92,29 +92,28 @@ Dados por planta:
 ${JSON.stringify(kpis, null, 2)}`
 
   try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 2000,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
       }),
     })
 
     if (!response.ok) {
-      console.error(`AI gateway error [${response.status}]:`, await response.text())
+      console.error(`Claude API error [${response.status}]:`, await response.text())
       return buildFallbackReport(kpis, mes, ano, clienteName)
     }
 
     const data = await response.json()
-    return data.choices?.[0]?.message?.content ?? buildFallbackReport(kpis, mes, ano, clienteName)
+    return data.content?.[0]?.text ?? buildFallbackReport(kpis, mes, ano, clienteName)
   } catch (err) {
     console.error('AI report generation failed:', err)
     return buildFallbackReport(kpis, mes, ano, clienteName)
