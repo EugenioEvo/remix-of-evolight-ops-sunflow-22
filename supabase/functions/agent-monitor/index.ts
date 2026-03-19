@@ -22,12 +22,16 @@ function proxyHeaders(): Record<string, string> {
 async function solarzGet(url: string) {
   const headers = proxyHeaders()
   const res = await fetch(url, { headers })
+  if (!res.ok) {
+    const errorBody = await res.text()
+    console.error(`SolarZ GET ${url} failed: ${res.status}`, errorBody.substring(0, 500))
+    throw new Error(`SolarZ GET ${url} failed: ${res.status} - ${errorBody.substring(0, 200)}`)
+  }
   const contentType = res.headers.get('content-type') || ''
   if (!contentType.includes('application/json')) {
     const preview = (await res.text()).substring(0, 300)
     throw new Error(`Non-JSON response from ${url}: ${contentType} - ${preview}`)
   }
-  if (!res.ok) throw new Error(`SolarZ GET ${url} failed: ${res.status}`)
   return res.json()
 }
 
