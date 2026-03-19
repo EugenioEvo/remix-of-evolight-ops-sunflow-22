@@ -13,24 +13,19 @@ interface TestResult {
   error?: string
 }
 
-function solarzHeaders(username: string, password: string): Record<string, string> {
-  const credentials = btoa(`${username}:${password}`)
+function proxyHeaders(proxySecret: string): Record<string, string> {
   return {
-    'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'User-Agent': 'Evolight-JARVIS/1.0',
-    'X-Requested-With': 'XMLHttpRequest',
+    'X-Proxy-Secret': proxySecret,
   }
 }
 
 async function testAuth(baseUrl: string, headers: Record<string, string>): Promise<TestResult> {
   const start = Date.now()
   try {
-    // Basic Auth doesn't have a login endpoint — test by listing plants
     const url = `${baseUrl}/openApi/seller/plantWithInfos/list`
     console.log(`[test-solarz-api] Testing auth at: ${url}`)
-    console.log(`[test-solarz-api] Auth header: ${headers['Authorization']?.substring(0, 20)}...`)
     const res = await fetch(url, {
       method: 'POST',
       headers,
@@ -39,20 +34,19 @@ async function testAuth(baseUrl: string, headers: Record<string, string>): Promi
     const rawText = await res.text()
     console.log(`[test-solarz-api] Response status: ${res.status}, content-type: ${res.headers.get('content-type')}`)
     console.log(`[test-solarz-api] Response body preview: ${rawText.substring(0, 200)}`)
-    
-    // Try to parse as JSON
+
     let body: any
     try {
       body = JSON.parse(rawText)
     } catch {
       return { step: 'auth', success: false, duration_ms: Date.now() - start, error: `Response is not JSON (status ${res.status}). Content-type: ${res.headers.get('content-type')}. Body preview: ${rawText.substring(0, 300)}` }
     }
-    
+
     if (!res.ok) {
       return { step: 'auth', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
     }
     const count = Array.isArray(body.content) ? body.content.length : 0
-    return { step: 'auth', success: true, duration_ms: Date.now() - start, data: { message: 'Basic Auth OK', plants_in_page: count } }
+    return { step: 'auth', success: true, duration_ms: Date.now() - start, data: { message: 'Proxy Auth OK', plants_in_page: count } }
   } catch (err) {
     return { step: 'auth', success: false, duration_ms: Date.now() - start, error: String(err) }
   }
@@ -160,22 +154,17 @@ serve(async (req) => {
     if (baseUrl && !baseUrl.startsWith('http')) {
       baseUrl = 'https://' + baseUrl
     }
-    const proxySecret = Deno.env.get('SOLARZ_PROXY_SECRET') || null
+    const proxySecret = Deno.env.get('SOLARZ_PROXY_SECRET') ?? ''
 
-    if (!baseUrl) {
+    if (!baseUrl || !proxySecret) {
       return new Response(JSON.stringify({
         success: false,
-        error: 'Missing secret: SOLARZ_API_URL',
+        error: 'Missing secrets: SOLARZ_API_URL and/or SOLARZ_PROXY_SECRET',
         configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_PROXY_SECRET: !!proxySecret },
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Use proxy headers (same approach as agent-monitor)
-    const headers = proxySecret
-      ? { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Proxy-Secret': proxySecret }
-      : solarzHeaders(Deno.env.get('SOLARZ_USERNAME') ?? '', Deno.env.get('SOLARZ_PASSWORD') ?? '')
-
-    const effectiveBase = baseUrl
+    const headers = proxyHeaders(proxySecret)
 
     let testMode = 'all'
     let plantId: string | undefined
@@ -185,10 +174,10 @@ serve(async (req) => {
       plantId = body.plant_id
     } catch { /* default to 'all' */ }
 
-    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy Secret: ${proxySecret ? 'SET' : 'NOT SET'}`)
+    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}`)
 
     // Step 1: Auth test (via plant list)
-    const authResult = await testAuth(effectiveBase, headers)
+    const authResult = await testAuth(baseUrl, headers)
     results.push(authResult)
 
     if (!authResult.success || testMode === 'auth') {
@@ -202,7 +191,7 @@ serve(async (req) => {
 
     // Step 2: Plants
     if (['all', 'plants'].includes(testMode)) {
-      const plantsResult = await testPlants(effectiveBase, headers)
+      const plantsResult = await testPlants(baseUrl, headers)
       results.push(plantsResult.result)
       if (!plantId && plantsResult.plants && plantsResult.plants.length > 0) {
         plantId = String(plantsResult.plants[0].id)
@@ -221,10 +210,10 @@ serve(async (req) => {
     // Step 3: Detailed tests for a specific plant
     if (plantId && ['all', 'metrics'].includes(testMode)) {
       const [statusResult, powerResult, perfResult, energyResult] = await Promise.all([
-        testStatus(effectiveBase, headers, plantId),
-        testPower(effectiveBase, headers, plantId),
-        testPerformance(effectiveBase, headers, plantId),
-        testEnergy(effectiveBase, headers, plantId),
+        testStatus(baseUrl, headers, plantId),
+        testPower(baseUrl, headers, plantId),
+        testPerformance(baseUrl, headers, plantId),
+        testEnergy(baseUrl, headers, plantId),
       ])
       results.push(statusResult, powerResult, perfResult, energyResult)
     }
