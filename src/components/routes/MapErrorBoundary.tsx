@@ -1,4 +1,5 @@
 import React from 'react';
+import logger from '@/lib/logger';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
