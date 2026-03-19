@@ -1,5 +1,5 @@
 // SolarZ API adapter – implements ISolarMonitoringSource
-// Uses Basic Auth and real SolarZ OpenAPI endpoints
+// Uses Cloudflare Worker proxy with X-Proxy-Secret header
 import logger from '@/lib/logger';
 import type {
   ISolarMonitoringSource,
@@ -92,7 +92,11 @@ export class SolarzAdapter implements ISolarMonitoringSource {
   private proxySecret: string;
 
   constructor(config: { baseUrl: string; proxySecret: string }) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, '');
+    let url = config.baseUrl.replace(/\/$/, '');
+    if (url && !url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    this.baseUrl = url;
     this.proxySecret = config.proxySecret;
   }
 
