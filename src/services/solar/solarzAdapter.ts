@@ -1,4 +1,5 @@
 // SolarZ API adapter – implements ISolarMonitoringSource
+// Uses Basic Auth and real SolarZ OpenAPI endpoints
 import logger from '@/lib/logger';
 import type {
   ISolarMonitoringSource,
@@ -31,62 +32,55 @@ async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
   throw lastError;
 }
 
-// ── SolarZ raw response types (minimal) ─────────────────────
-
-interface SolarzLoginResponse {
-  token: string;
-  expiresAt?: string;
-}
+// ── SolarZ raw response types ───────────────────────────────
 
 interface SolarzRawPlant {
-  id: string;
+  id: number;
   name: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  capacity?: number;
-  inverter_brand?: string;
-  inverter_model?: string;
-  inverter_serial?: string;
-  installation_date?: string;
-  status?: string;
+  installedPower?: number;
+  status?: { status: string; at: string };
+  dataInstalacao?: string;
+  cliente?: { nome?: string; email?: string; cpf?: string };
+  endereco?: {
+    cidade?: string;
+    siglaEstado?: string;
+    logradouro?: string;
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
-interface SolarzRawMetric {
-  plant_id: string;
-  timestamp: string;
-  generation_kwh?: number;
-  instant_power_kw?: number;
-  irradiation_wm2?: number;
-  inverter_temp?: number;
-  voltage_dc?: number;
-  current_dc?: number;
-  voltage_ac?: number;
-  current_ac?: number;
-  frequency_hz?: number;
-  power_factor?: number;
-  efficiency?: number;
+interface SolarzEnergyDay {
+  date: string;
+  total: number;
+  totalExpected?: number;
 }
 
-interface SolarzRawAlert {
-  id: string;
-  plant_id: string;
-  type: string;
-  severity: string;
-  title: string;
-  description?: string;
-  data?: Record<string, unknown>;
-  created_at: string;
-}
-
-interface SolarzRawDevice {
-  id: string;
-  type: string;
-  name: string;
-  serial?: string;
+interface SolarzPowerData {
+  plantId: number;
+  plantName: string;
   status: string;
-  last_seen?: string;
-  metadata?: Record<string, unknown>;
+  installedPower: number;
+  instantPower: number;
+  totalGenerated: number;
+  generation365Days: number;
+}
+
+interface SolarzStatusData {
+  plantId: number;
+  status: string;
+  at: string;
+}
+
+interface SolarzPerformanceData {
+  total1D: number;
+  expected1D: number;
+  total15D: number;
+  expected15D: number;
+  total30D: number;
+  expected30D: number;
+  total365D: number;
+  expected365D: number;
 }
 
 // ── Adapter ─────────────────────────────────────────────────
@@ -97,8 +91,6 @@ export class SolarzAdapter implements ISolarMonitoringSource {
   private baseUrl: string;
   private username: string;
   private password: string;
-  private token: string | null = null;
-  private tokenExpiresAt: Date | null = null;
 
   constructor(config: { baseUrl: string; username: string; password: string }) {
     this.baseUrl = config.baseUrl.replace(/\/$/, '');
@@ -106,44 +98,27 @@ export class SolarzAdapter implements ISolarMonitoringSource {
     this.password = config.password;
   }
 
-  // ── Auth ────────────────────────────────────────────────
+  // ── Auth (Basic Auth — no login endpoint) ──────────────
 
   async authenticate(): Promise<void> {
-    if (this.token && this.tokenExpiresAt && this.tokenExpiresAt > new Date()) {
-      return; // token still valid
-    }
+    // Basic Auth doesn't require a login step — credentials are sent with every request.
+    // This method exists to satisfy the ISolarMonitoringSource interface.
+    logger.info('[SolarZ] Using Basic Auth (no login required)');
+  }
 
-    logger.info('[SolarZ] Authenticating…');
-    const res = await withRetry(
-      () =>
-        fetch(`${this.baseUrl}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: this.username, password: this.password }),
-        }),
-      'authenticate',
-    );
-
-    if (!res.ok) {
-      throw new Error(`SolarZ auth failed: ${res.status} ${res.statusText}`);
-    }
-
-    const data: SolarzLoginResponse = await res.json();
-    this.token = data.token;
-    // Default to 55 min if no expiry provided
-    this.tokenExpiresAt = data.expiresAt
-      ? new Date(data.expiresAt)
-      : new Date(Date.now() + 55 * 60 * 1_000);
-    logger.info('[SolarZ] Authenticated successfully');
+  private getAuthHeaders(): Record<string, string> {
+    const credentials = btoa(`${this.username}:${this.password}`);
+    return {
+      'Authorization': `Basic ${credentials}`,
+      'Content-Type': 'application/json',
+    };
   }
 
   private async authedFetch(path: string, init?: RequestInit): Promise<Response> {
-    await this.authenticate();
     return fetch(`${this.baseUrl}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.token}`,
+        ...this.getAuthHeaders(),
         ...(init?.headers ?? {}),
       },
     });
@@ -152,32 +127,50 @@ export class SolarzAdapter implements ISolarMonitoringSource {
   // ── Plants ──────────────────────────────────────────────
 
   async getPlants(): Promise<SolarPlant[]> {
-    logger.info('[SolarZ] Fetching plants');
-    const res = await withRetry(() => this.authedFetch('/plants'), 'getPlants');
-    if (!res.ok) throw new Error(`SolarZ getPlants failed: ${res.status}`);
-    const raw: SolarzRawPlant[] = await res.json();
-    return raw.map(this.normalizePlant);
+    logger.info('[SolarZ] Fetching plants via /openApi/seller/plantWithInfos/list');
+    const allPlants: SolarzRawPlant[] = [];
+    let page = 0;
+    const pageSize = 100;
+
+    while (true) {
+      const res = await withRetry(
+        () =>
+          this.authedFetch('/openApi/seller/plantWithInfos/list', {
+            method: 'POST',
+            body: JSON.stringify({ page, pageSize }),
+          }),
+        `getPlants page ${page}`,
+      );
+      if (!res.ok) throw new Error(`SolarZ getPlants failed: ${res.status}`);
+      const data = await res.json();
+      const content: SolarzRawPlant[] = data.content ?? [];
+      if (content.length === 0) break;
+      allPlants.push(...content);
+      if (content.length < pageSize) break;
+      page++;
+    }
+
+    logger.info(`[SolarZ] Found ${allPlants.length} plants`);
+    return allPlants.map(this.normalizePlant);
   }
 
   private normalizePlant(r: SolarzRawPlant): SolarPlant {
     const statusMap: Record<string, SolarPlant['status']> = {
-      online: 'online',
-      offline: 'offline',
-      alert: 'alert',
-      warning: 'alert',
+      NORMAL: 'online',
+      ONLINE: 'online',
+      OFFLINE: 'offline',
+      ALERT: 'alert',
+      WARNING: 'alert',
     };
     return {
-      externalId: r.id,
+      externalId: String(r.id),
       name: r.name,
-      address: r.address,
-      city: r.city,
-      state: r.state,
-      capacityKwp: r.capacity ?? 0,
-      inverterBrand: r.inverter_brand,
-      inverterModel: r.inverter_model,
-      inverterSerial: r.inverter_serial,
-      installationDate: r.installation_date,
-      status: statusMap[r.status ?? ''] ?? 'unknown',
+      address: r.endereco?.logradouro,
+      city: r.endereco?.cidade,
+      state: r.endereco?.siglaEstado,
+      capacityKwp: r.installedPower ?? 0,
+      installationDate: r.dataInstalacao,
+      status: statusMap[r.status?.status ?? ''] ?? 'unknown',
     };
   }
 
@@ -185,94 +178,209 @@ export class SolarzAdapter implements ISolarMonitoringSource {
 
   async getPlantMetrics(plantExternalId: string, range: DateRange): Promise<SolarMetric[]> {
     logger.info(`[SolarZ] Fetching metrics for plant ${plantExternalId}`);
-    const qs = `start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}`;
-    const res = await withRetry(
-      () => this.authedFetch(`/plants/${plantExternalId}/metrics?${qs}`),
-      'getPlantMetrics',
+    const plantIdInt = parseInt(plantExternalId, 10);
+
+    // 1. Day-range energy data
+    const fromDate = range.start.substring(0, 10); // yyyy-MM-dd
+    const toDate = range.end.substring(0, 10);
+
+    const energyRes = await withRetry(
+      () =>
+        this.authedFetch(
+          `/openApi/seller/plant/energy/dayRange?plantId=${plantIdInt}&fromLocalDate=${fromDate}&toLocalDate=${toDate}`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ plantId: plantIdInt, fromLocalDate: fromDate, toLocalDate: toDate }),
+          },
+        ),
+      'getPlantMetrics/energy',
     );
-    if (!res.ok) throw new Error(`SolarZ getPlantMetrics failed: ${res.status}`);
-    const raw: SolarzRawMetric[] = await res.json();
-    return raw.map(this.normalizeMetric);
+    if (!energyRes.ok) throw new Error(`SolarZ energy/dayRange failed: ${energyRes.status}`);
+    const energyData: SolarzEnergyDay[] = await energyRes.json();
+
+    // 2. Current power snapshot
+    let instantPower: number | undefined;
+    try {
+      const powerRes = await withRetry(
+        () => this.authedFetch(`/openApi/seller/plant/power?id=${plantIdInt}`),
+        'getPlantMetrics/power',
+      );
+      if (powerRes.ok) {
+        const powerData: SolarzPowerData = await powerRes.json();
+        instantPower = powerData.instantPower;
+      }
+    } catch {
+      logger.warn(`[SolarZ] Could not fetch power for plant ${plantExternalId}`);
+    }
+
+    // Combine
+    const metrics: SolarMetric[] = (energyData ?? []).map((d) => ({
+      plantExternalId,
+      timestamp: d.date,
+      generationKwh: d.total,
+    }));
+
+    // Add instant power to the latest entry or create one
+    if (instantPower !== undefined && metrics.length > 0) {
+      metrics[metrics.length - 1].instantPowerKw = instantPower;
+    } else if (instantPower !== undefined) {
+      metrics.push({
+        plantExternalId,
+        timestamp: new Date().toISOString(),
+        instantPowerKw: instantPower,
+      });
+    }
+
+    return metrics;
   }
 
-  private normalizeMetric(r: SolarzRawMetric): SolarMetric {
-    return {
-      plantExternalId: r.plant_id,
-      timestamp: r.timestamp,
-      generationKwh: r.generation_kwh,
-      instantPowerKw: r.instant_power_kw,
-      irradiationWm2: r.irradiation_wm2,
-      inverterTempC: r.inverter_temp,
-      voltageDc: r.voltage_dc,
-      currentDc: r.current_dc,
-      voltageAc: r.voltage_ac,
-      currentAc: r.current_ac,
-      frequencyHz: r.frequency_hz,
-      powerFactor: r.power_factor,
-      efficiencyPercent: r.efficiency,
-    };
-  }
-
-  // ── Alerts ──────────────────────────────────────────────
+  // ── Alerts (derived from status + performance) ─────────
 
   async getAlerts(plantExternalId?: string): Promise<SolarAlert[]> {
-    logger.info(`[SolarZ] Fetching alerts${plantExternalId ? ` for plant ${plantExternalId}` : ''}`);
-    const path = plantExternalId ? `/plants/${plantExternalId}/alerts` : '/alerts';
-    const res = await withRetry(() => this.authedFetch(path), 'getAlerts');
-    if (!res.ok) throw new Error(`SolarZ getAlerts failed: ${res.status}`);
-    const raw: SolarzRawAlert[] = await res.json();
-    return raw.map(this.normalizeAlert);
+    logger.info(`[SolarZ] Deriving alerts${plantExternalId ? ` for plant ${plantExternalId}` : ' for all plants'}`);
+
+    if (!plantExternalId) {
+      // Get all plants and derive alerts for each
+      const plants = await this.getPlants();
+      const allAlerts: SolarAlert[] = [];
+      for (const p of plants) {
+        try {
+          const alerts = await this.deriveAlertsForPlant(p.externalId);
+          allAlerts.push(...alerts);
+        } catch (err) {
+          logger.warn(`[SolarZ] Failed to derive alerts for plant ${p.externalId}`, err);
+        }
+      }
+      return allAlerts;
+    }
+
+    return this.deriveAlertsForPlant(plantExternalId);
   }
 
-  private normalizeAlert(r: SolarzRawAlert): SolarAlert {
-    const typeMap: Record<string, SolarAlert['type']> = {
-      offline: 'offline',
-      low_generation: 'baixa_geracao',
-      inverter_error: 'erro_inversor',
-      communication: 'comunicacao',
-      temperature: 'temperatura',
-    };
-    const sevMap: Record<string, SolarAlert['severity']> = {
-      info: 'info',
-      warning: 'warning',
-      critical: 'critical',
-      error: 'critical',
-    };
-    return {
-      externalId: r.id,
-      plantExternalId: r.plant_id,
-      type: typeMap[r.type] ?? 'comunicacao',
-      severity: sevMap[r.severity] ?? 'info',
-      title: r.title,
-      description: r.description,
-      contextData: r.data,
-      timestamp: r.created_at,
-    };
+  private async deriveAlertsForPlant(plantExternalId: string): Promise<SolarAlert[]> {
+    const plantIdInt = parseInt(plantExternalId, 10);
+    const alerts: SolarAlert[] = [];
+    const now = new Date();
+
+    // a) Status check
+    try {
+      const statusRes = await this.authedFetch(`/openApi/seller/plant/status?id=${plantIdInt}`);
+      if (statusRes.ok) {
+        const statusData: SolarzStatusData = await statusRes.json();
+        const lastUpdate = new Date(statusData.at);
+        const minutesSinceUpdate = (now.getTime() - lastUpdate.getTime()) / 60_000;
+
+        if (statusData.status !== 'NORMAL' && minutesSinceUpdate > 30) {
+          alerts.push({
+            externalId: `derived-offline-${plantExternalId}-${now.toISOString()}`,
+            plantExternalId,
+            type: 'offline',
+            severity: 'critical',
+            title: `Planta offline: status ${statusData.status}`,
+            description: `Última atualização há ${Math.round(minutesSinceUpdate)} minutos.`,
+            contextData: { status: statusData.status, lastUpdate: statusData.at, minutesSinceUpdate },
+            timestamp: now.toISOString(),
+          });
+        }
+
+        if (minutesSinceUpdate > 120) {
+          alerts.push({
+            externalId: `derived-comm-${plantExternalId}-${now.toISOString()}`,
+            plantExternalId,
+            type: 'comunicacao',
+            severity: 'warning',
+            title: `Sem comunicação há ${Math.round(minutesSinceUpdate)} minutos`,
+            description: `Última atualização: ${statusData.at}`,
+            contextData: { lastUpdate: statusData.at, minutesSinceUpdate },
+            timestamp: now.toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      logger.warn(`[SolarZ] Status check failed for plant ${plantExternalId}`, err);
+    }
+
+    // b) Performance check (generation vs expected)
+    try {
+      const perfRes = await this.authedFetch(`/openApi/seller/plant/performance/plantId/${plantIdInt}`, {
+        method: 'POST',
+      });
+      if (perfRes.ok) {
+        const perfData: SolarzPerformanceData = await perfRes.json();
+        if (perfData.expected1D > 0 && perfData.total1D > 0) {
+          const ratio = perfData.total1D / perfData.expected1D;
+          if (ratio < 0.70) {
+            alerts.push({
+              externalId: `derived-lowgen-${plantExternalId}-${now.toISOString()}`,
+              plantExternalId,
+              type: 'baixa_geracao',
+              severity: 'warning',
+              title: `Baixa geração: ${Math.round(ratio * 100)}% do esperado`,
+              description: `Geração: ${perfData.total1D.toFixed(1)} kWh, Esperado: ${perfData.expected1D.toFixed(1)} kWh`,
+              contextData: { ratio, total1D: perfData.total1D, expected1D: perfData.expected1D },
+              timestamp: now.toISOString(),
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(`[SolarZ] Performance check failed for plant ${plantExternalId}`, err);
+    }
+
+    // c) Power check (zero power during solar hours)
+    try {
+      const powerRes = await this.authedFetch(`/openApi/seller/plant/power?id=${plantIdInt}`);
+      if (powerRes.ok) {
+        const powerData: SolarzPowerData = await powerRes.json();
+        const hour = now.getHours();
+        if (hour >= 6 && hour <= 18 && powerData.instantPower === 0) {
+          alerts.push({
+            externalId: `derived-zeropower-${plantExternalId}-${now.toISOString()}`,
+            plantExternalId,
+            type: 'offline',
+            severity: 'warning',
+            title: 'Potência instantânea zero em horário solar',
+            description: `Potência instalada: ${powerData.installedPower} kWp, geração instantânea: 0`,
+            contextData: { instantPower: 0, installedPower: powerData.installedPower, hour },
+            timestamp: now.toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      logger.warn(`[SolarZ] Power check failed for plant ${plantExternalId}`, err);
+    }
+
+    return alerts;
   }
 
   // ── Device Status ───────────────────────────────────────
 
   async getDeviceStatus(plantExternalId: string): Promise<DeviceStatus> {
     logger.info(`[SolarZ] Fetching device status for plant ${plantExternalId}`);
+    const plantIdInt = parseInt(plantExternalId, 10);
+
     const res = await withRetry(
-      () => this.authedFetch(`/plants/${plantExternalId}/devices`),
+      () => this.authedFetch(`/openApi/seller/plant/power?id=${plantIdInt}`),
       'getDeviceStatus',
     );
     if (!res.ok) throw new Error(`SolarZ getDeviceStatus failed: ${res.status}`);
-    const raw: SolarzRawDevice[] = await res.json();
-    const devices: DeviceInfo[] = raw.map((d) => ({
-      id: d.id,
-      type: (['inverter', 'meter', 'sensor', 'string_box'].includes(d.type)
-        ? d.type
-        : 'sensor') as DeviceInfo['type'],
-      name: d.name,
-      serial: d.serial,
-      status: (['online', 'offline', 'error', 'maintenance'].includes(d.status)
-        ? d.status
-        : 'offline') as DeviceInfo['status'],
-      lastSeen: d.last_seen,
-      metadata: d.metadata,
-    }));
-    return { plantExternalId, devices };
+    const powerData: SolarzPowerData = await res.json();
+
+    // Map to a generic device entry from available data
+    const device: DeviceInfo = {
+      id: `plant-${plantExternalId}`,
+      type: 'inverter',
+      name: powerData.plantName ?? `Planta ${plantExternalId}`,
+      status: powerData.status === 'NORMAL' ? 'online' : 'offline',
+      lastSeen: new Date().toISOString(),
+      metadata: {
+        installedPower: powerData.installedPower,
+        instantPower: powerData.instantPower,
+        totalGenerated: powerData.totalGenerated,
+        generation365Days: powerData.generation365Days,
+      },
+    };
+
+    return { plantExternalId, devices: [device] };
   }
 }

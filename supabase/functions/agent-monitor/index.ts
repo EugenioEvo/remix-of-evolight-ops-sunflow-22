@@ -8,28 +8,23 @@ const corsHeaders = {
 
 // ── Detection thresholds ────────────────────────────────────
 const OFFLINE_THRESHOLD_MIN = 30
+const COMM_THRESHOLD_MIN = 120
 const LOW_GENERATION_RATIO = 0.70
-const HIGH_TEMP_CELSIUS = 65
 
-// ── SolarZ API helpers ──────────────────────────────────────
+// ── SolarZ API helpers (Basic Auth) ─────────────────────────
 
-async function solarzLogin(baseUrl: string, username: string, password: string): Promise<string> {
-  const res = await fetch(`${baseUrl}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  })
-  if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`SolarZ auth failed [${res.status}]: ${body}`)
+function solarzHeaders(username: string, password: string): Record<string, string> {
+  const credentials = btoa(`${username}:${password}`)
+  return {
+    'Authorization': `Basic ${credentials}`,
+    'Content-Type': 'application/json',
   }
-  const data = await res.json()
-  return data.token
 }
 
-async function solarzFetch(baseUrl: string, token: string, path: string) {
+async function solarzFetch(baseUrl: string, headers: Record<string, string>, path: string, init?: RequestInit) {
   const res = await fetch(`${baseUrl}${path}`, {
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    ...init,
+    headers: { ...headers, ...(init?.headers ?? {}) },
   })
   if (!res.ok) {
     const body = await res.text()
@@ -38,51 +33,19 @@ async function solarzFetch(baseUrl: string, token: string, path: string) {
   return res.json()
 }
 
-// ── Alert classification ────────────────────────────────────
-
-function classifyAlert(type: string, rawSeverity?: string): { tipo: string; severidade: string } {
-  const typeMap: Record<string, string> = {
-    offline: 'offline',
-    low_generation: 'baixa_geracao',
-    inverter_error: 'erro_inversor',
-    communication: 'comunicacao',
-    temperature: 'temperatura',
-  }
-  const tipo = typeMap[type] ?? type
-
-  // Override severity based on rules
-  if (tipo === 'offline' || tipo === 'temperatura') return { tipo, severidade: 'critical' }
-  if (tipo === 'erro_inversor') return { tipo, severidade: 'critical' }
-  if (tipo === 'baixa_geracao' || tipo === 'comunicacao') return { tipo, severidade: 'warning' }
-
-  const sevMap: Record<string, string> = { critical: 'critical', error: 'critical', warning: 'warning', info: 'info' }
-  return { tipo, severidade: sevMap[rawSeverity ?? ''] ?? 'info' }
-}
-
 // ── Dispatch helpers ────────────────────────────────────────
 
-async function dispatchCritical(
-  supabaseAdmin: any,
-  plantId: string,
-  tipo: string,
-  severidade: string,
-) {
+async function dispatchCritical(supabaseAdmin: any, plantId: string, tipo: string, severidade: string) {
   try {
     await supabaseAdmin.functions.invoke('agent-dispatcher', {
       body: { plant_id: plantId, alert_type: tipo, severity: severidade },
     })
   } catch (err) {
-    console.warn('Dispatcher invocation failed (may not exist yet):', err)
+    console.warn('Dispatcher invocation failed:', err)
   }
 }
 
-async function dispatchJarvis(
-  supabaseAdmin: any,
-  alertId: string,
-  plantId: string,
-  tipo: string,
-  severidade: string,
-) {
+async function dispatchJarvis(supabaseAdmin: any, alertId: string, plantId: string, tipo: string, severidade: string) {
   try {
     await supabaseAdmin.functions.invoke('jarvis-orchestrator', {
       body: { alert_id: alertId, plant_id: plantId, tipo, severidade },
@@ -121,10 +84,10 @@ serve(async (req) => {
       throw new Error('SolarZ credentials not configured (SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD)')
     }
 
-    // ── 2. Authenticate with SolarZ ──────────────────────
-    const token = await solarzLogin(SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD)
+    const headers = solarzHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD)
+    const baseUrl = SOLARZ_API_URL.replace(/\/$/, '')
 
-    // ── 3. Get all registered plants ─────────────────────
+    // ── 2. Get all registered plants ─────────────────────
     const { data: plants, error: plantsErr } = await supabaseAdmin
       .from('solar_plants')
       .select('id, solarz_plant_id, nome, potencia_kwp')
@@ -136,203 +99,149 @@ serve(async (req) => {
       throw new Error('No active plants with solarz_plant_id found')
     }
 
-    // ── 4. Process each plant ────────────────────────────
+    // ── 3. Process each plant ────────────────────────────
     for (const plant of plants) {
       plantsProcessed++
       const externalId = plant.solarz_plant_id!
 
       try {
-        // 4a. Fetch SolarZ alerts
-        const rawAlerts = await solarzFetch(SOLARZ_API_URL, token, `/plants/${externalId}/alerts`)
-        const alertList = Array.isArray(rawAlerts) ? rawAlerts : (rawAlerts.data ?? [])
+        const now = new Date()
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
 
-        for (const raw of alertList) {
-          const alertExternalId = raw.id ?? raw.alert_id
-          if (!alertExternalId) continue
+        // ── 3a. Fetch status ───────────────────────────
+        let statusData: any = null
+        try {
+          statusData = await solarzFetch(baseUrl, headers, `/openApi/seller/plant/status?id=${externalId}`)
+        } catch (err) {
+          console.warn(`Could not fetch status for plant ${externalId}:`, err)
+        }
 
-          // Check if already exists
-          const { data: existing } = await supabaseAdmin
-            .from('solar_alerts')
-            .select('id')
-            .eq('plant_id', plant.id)
-            .contains('dados_contexto', { external_id: alertExternalId })
-            .maybeSingle()
+        // ── 3b. Fetch performance ──────────────────────
+        let perfData: any = null
+        try {
+          perfData = await solarzFetch(baseUrl, headers, `/openApi/seller/plant/performance/plantId/${externalId}`, {
+            method: 'POST',
+          })
+        } catch (err) {
+          console.warn(`Could not fetch performance for plant ${externalId}:`, err)
+        }
 
-          if (existing) continue
+        // ── 3c. Fetch power ────────────────────────────
+        let powerData: any = null
+        try {
+          powerData = await solarzFetch(baseUrl, headers, `/openApi/seller/plant/power?id=${externalId}`)
+        } catch (err) {
+          console.warn(`Could not fetch power for plant ${externalId}:`, err)
+        }
 
-          const { tipo, severidade } = classifyAlert(raw.type ?? raw.tipo, raw.severity)
+        // ── 3d. Derive alerts ──────────────────────────
 
-          const { data: insertedAlert, error: insertErr } = await supabaseAdmin
-            .from('solar_alerts')
-            .insert([{
+        // Offline: status not NORMAL and last update > 30min
+        if (statusData) {
+          const lastUpdate = new Date(statusData.at)
+          const minutesSinceUpdate = (now.getTime() - lastUpdate.getTime()) / 60_000
+
+          if (statusData.status !== 'NORMAL' && minutesSinceUpdate > OFFLINE_THRESHOLD_MIN) {
+            const alert = await insertAlertIfNew(supabaseAdmin, {
               plant_id: plant.id,
-              tipo,
-              severidade,
-              titulo: raw.title ?? raw.titulo ?? `Alerta: ${tipo}`,
-              descricao: raw.description ?? raw.descricao ?? null,
-              dados_contexto: { external_id: alertExternalId, raw_data: raw },
-              status: 'aberto',
-            }])
-            .select('id')
-            .single()
-
-          if (insertErr) {
-            console.error(`Failed to insert alert for plant ${plant.id}:`, insertErr)
-          } else {
-            alertsCreated++
-
-            // Route based on severity
-            if (severidade === 'critical') {
-              await dispatchCritical(supabaseAdmin, plant.id, tipo, severidade)
-            } else if (severidade === 'warning') {
-              jarvisInvocations++
-              await dispatchJarvis(supabaseAdmin, insertedAlert.id, plant.id, tipo, severidade)
+              tipo: 'offline',
+              severidade: 'critical',
+              titulo: `Planta offline: status ${statusData.status}`,
+              descricao: `${plant.nome} — última atualização há ${Math.round(minutesSinceUpdate)} min.`,
+              dados_contexto: { status: statusData.status, lastUpdate: statusData.at, minutesSinceUpdate },
+              todayStart,
+            })
+            if (alert) {
+              alertsCreated++
+              await dispatchCritical(supabaseAdmin, plant.id, 'offline', 'critical')
             }
-            // info → no dispatch, just logged
+          }
+
+          // Communication: last update > 2h
+          if (minutesSinceUpdate > COMM_THRESHOLD_MIN) {
+            const alert = await insertAlertIfNew(supabaseAdmin, {
+              plant_id: plant.id,
+              tipo: 'comunicacao',
+              severidade: 'warning',
+              titulo: `Sem comunicação há ${Math.round(minutesSinceUpdate)} min`,
+              descricao: `${plant.nome} — última atualização: ${statusData.at}`,
+              dados_contexto: { lastUpdate: statusData.at, minutesSinceUpdate },
+              todayStart,
+            })
+            if (alert) {
+              alertsCreated++
+              jarvisInvocations++
+              await dispatchJarvis(supabaseAdmin, alert.id, plant.id, 'comunicacao', 'warning')
+            }
           }
         }
 
-        // 4b. Fetch metrics (last 24h) and check generation
-        const now = new Date()
-        const since = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-        const metricsPath = `/plants/${externalId}/metrics?start=${since.toISOString()}&end=${now.toISOString()}`
-
-        let rawMetrics: any[] = []
-        try {
-          const metricsRes = await solarzFetch(SOLARZ_API_URL, token, metricsPath)
-          rawMetrics = Array.isArray(metricsRes) ? metricsRes : (metricsRes.data ?? [])
-        } catch {
-          console.warn(`Could not fetch metrics for plant ${externalId}`)
+        // Low generation: real < 70% of expected
+        if (perfData && perfData.expected1D > 0 && perfData.total1D > 0) {
+          const ratio = perfData.total1D / perfData.expected1D
+          if (ratio < LOW_GENERATION_RATIO) {
+            const alert = await insertAlertIfNew(supabaseAdmin, {
+              plant_id: plant.id,
+              tipo: 'baixa_geracao',
+              severidade: 'warning',
+              titulo: `Baixa geração: ${Math.round(ratio * 100)}% do esperado`,
+              descricao: `${plant.nome} — Geração: ${perfData.total1D.toFixed(1)} kWh, Esperado: ${perfData.expected1D.toFixed(1)} kWh`,
+              dados_contexto: { ratio, total1D: perfData.total1D, expected1D: perfData.expected1D },
+              todayStart,
+            })
+            if (alert) {
+              alertsCreated++
+              jarvisInvocations++
+              await dispatchJarvis(supabaseAdmin, alert.id, plant.id, 'baixa_geracao', 'warning')
+            }
+          }
         }
 
-        if (rawMetrics.length > 0) {
+        // Zero power during solar hours (6h-18h)
+        if (powerData) {
+          const hour = now.getHours()
+          if (hour >= 6 && hour <= 18 && powerData.instantPower === 0) {
+            const alert = await insertAlertIfNew(supabaseAdmin, {
+              plant_id: plant.id,
+              tipo: 'offline',
+              severidade: 'warning',
+              titulo: 'Potência instantânea zero em horário solar',
+              descricao: `${plant.nome} — Potência instalada: ${powerData.installedPower} kWp`,
+              dados_contexto: { instantPower: 0, installedPower: powerData.installedPower, hour },
+              todayStart,
+            })
+            if (alert) {
+              alertsCreated++
+              jarvisInvocations++
+              await dispatchJarvis(supabaseAdmin, alert.id, plant.id, 'offline', 'warning')
+            }
+          }
+        }
+
+        // ── 3e. Save metrics from power data ───────────
+        if (powerData) {
           metricsChecked++
-
-          // Save metrics
-          const metricRows = rawMetrics.map((m: any) => ({
-            plant_id: plant.id,
-            timestamp: m.timestamp,
-            geracao_kwh: m.generation_kwh ?? m.geracao_kwh ?? null,
-            potencia_instantanea_kw: m.instant_power_kw ?? null,
-            irradiacao_wm2: m.irradiation_wm2 ?? null,
-            temperatura_inversor: m.inverter_temp ?? null,
-            tensao_dc: m.voltage_dc ?? null,
-            corrente_dc: m.current_dc ?? null,
-            tensao_ac: m.voltage_ac ?? null,
-            corrente_ac: m.current_ac ?? null,
-            frequencia_hz: m.frequency_hz ?? null,
-            fator_potencia: m.power_factor ?? null,
-            eficiencia_percent: m.efficiency ?? null,
-          }))
-
           const { error: metricErr } = await supabaseAdmin
             .from('solar_metrics')
-            .insert(metricRows)
+            .insert([{
+              plant_id: plant.id,
+              timestamp: now.toISOString(),
+              geracao_kwh: powerData.totalGenerated ?? null,
+              potencia_instantanea_kw: powerData.instantPower ?? null,
+            }])
 
           if (metricErr) {
             console.error(`Failed to insert metrics for plant ${plant.id}:`, metricErr)
           }
-
-          // 4c. Compare with historical average (last 30 days)
-          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-          const { data: historicalMetrics } = await supabaseAdmin
-            .from('solar_metrics')
-            .select('geracao_kwh')
-            .eq('plant_id', plant.id)
-            .gte('timestamp', thirtyDaysAgo.toISOString())
-            .lt('timestamp', since.toISOString())
-
-          if (historicalMetrics && historicalMetrics.length > 0) {
-            const avgHistorical =
-              historicalMetrics.reduce((sum: number, m: any) => sum + (Number(m.geracao_kwh) || 0), 0) /
-              historicalMetrics.length
-
-            const currentTotal = rawMetrics.reduce(
-              (sum: number, m: any) => sum + (Number(m.generation_kwh ?? m.geracao_kwh) || 0),
-              0,
-            )
-            const currentAvg = currentTotal / rawMetrics.length
-
-            if (avgHistorical > 0 && currentAvg < avgHistorical * LOW_GENERATION_RATIO) {
-              // Check if low_gen alert already exists for today
-              const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-              const { data: existingLowGen } = await supabaseAdmin
-                .from('solar_alerts')
-                .select('id')
-                .eq('plant_id', plant.id)
-                .eq('tipo', 'baixa_geracao')
-                .eq('status', 'aberto')
-                .gte('created_at', todayStart)
-                .maybeSingle()
-
-              if (!existingLowGen) {
-                const ratio = Math.round((currentAvg / avgHistorical) * 100)
-                const { data: insertedLowGen, error: lowGenErr } = await supabaseAdmin
-                  .from('solar_alerts')
-                  .insert([{
-                    plant_id: plant.id,
-                    tipo: 'baixa_geracao',
-                    severidade: 'warning',
-                    titulo: `Baixa geração: ${ratio}% da média`,
-                    descricao: `Planta ${plant.nome} gerando ${ratio}% da média histórica (${avgHistorical.toFixed(1)} kWh avg vs ${currentAvg.toFixed(1)} kWh atual).`,
-                    dados_contexto: { avg_historical: avgHistorical, current_avg: currentAvg, ratio },
-                    status: 'aberto',
-                  }])
-                  .select('id')
-                  .single()
-
-                if (!lowGenErr && insertedLowGen) {
-                  alertsCreated++
-                  // baixa_geracao is warning → route through JARVIS
-                  jarvisInvocations++
-                  await dispatchJarvis(supabaseAdmin, insertedLowGen.id, plant.id, 'baixa_geracao', 'warning')
-                }
-              }
-            }
-          }
-
-          // 4d. Check temperature alerts
-          for (const m of rawMetrics) {
-            const temp = Number(m.inverter_temp ?? 0)
-            if (temp > HIGH_TEMP_CELSIUS) {
-              const { data: existingTemp } = await supabaseAdmin
-                .from('solar_alerts')
-                .select('id')
-                .eq('plant_id', plant.id)
-                .eq('tipo', 'temperatura')
-                .eq('status', 'aberto')
-                .maybeSingle()
-
-              if (!existingTemp) {
-                const { data: insertedTemp, error: tempErr } = await supabaseAdmin
-                  .from('solar_alerts')
-                  .insert([{
-                    plant_id: plant.id,
-                    tipo: 'temperatura',
-                    severidade: 'critical',
-                    titulo: `Temperatura inversor elevada: ${temp.toFixed(1)}°C`,
-                    descricao: `Inversor da planta ${plant.nome} atingiu ${temp.toFixed(1)}°C (limite: ${HIGH_TEMP_CELSIUS}°C).`,
-                    dados_contexto: { temperature: temp, threshold: HIGH_TEMP_CELSIUS, timestamp: m.timestamp },
-                    status: 'aberto',
-                  }])
-                  .select('id')
-                  .single()
-
-                if (!tempErr && insertedTemp) {
-                  alertsCreated++
-                  // temperatura is critical → dispatch directly
-                  await dispatchCritical(supabaseAdmin, plant.id, 'temperatura', 'critical')
-                }
-              }
-              break // one temp alert per plant per run
-            }
-          }
         }
 
-        // Update last sync timestamp
+        // ── 3f. Update last sync timestamp ─────────────
         await supabaseAdmin
           .from('solar_plants')
-          .update({ ultima_sincronizacao: new Date().toISOString() })
+          .update({
+            ultima_sincronizacao: now.toISOString(),
+            solarz_status: statusData?.status ?? powerData?.status ?? null,
+          })
           .eq('id', plant.id)
 
       } catch (plantErr) {
@@ -345,7 +254,7 @@ serve(async (req) => {
     errorMessage = err instanceof Error ? err.message : String(err)
   }
 
-  // ── 6. Log execution ──────────────────────────────────
+  // ── 4. Log execution ──────────────────────────────────
   const durationMs = Date.now() - startTime
 
   try {
@@ -377,3 +286,50 @@ serve(async (req) => {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 })
+
+// ── Helper: insert alert only if no open alert of same type exists today ──
+
+async function insertAlertIfNew(
+  supabaseAdmin: any,
+  params: {
+    plant_id: string
+    tipo: string
+    severidade: string
+    titulo: string
+    descricao: string
+    dados_contexto: Record<string, unknown>
+    todayStart: string
+  },
+): Promise<{ id: string } | null> {
+  const { data: existing } = await supabaseAdmin
+    .from('solar_alerts')
+    .select('id')
+    .eq('plant_id', params.plant_id)
+    .eq('tipo', params.tipo)
+    .eq('status', 'aberto')
+    .gte('created_at', params.todayStart)
+    .maybeSingle()
+
+  if (existing) return null
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from('solar_alerts')
+    .insert([{
+      plant_id: params.plant_id,
+      tipo: params.tipo,
+      severidade: params.severidade,
+      titulo: params.titulo,
+      descricao: params.descricao,
+      dados_contexto: params.dados_contexto,
+      status: 'aberto',
+    }])
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error(`Failed to insert ${params.tipo} alert for plant ${params.plant_id}:`, error)
+    return null
+  }
+
+  return inserted
+}
