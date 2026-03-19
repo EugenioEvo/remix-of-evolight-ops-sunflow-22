@@ -185,7 +185,7 @@ serve(async (req) => {
       plantId = body.plant_id
     } catch { /* default to 'all' */ }
 
-    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy: ${proxyUrl || 'NONE'}`)
+    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy Secret: ${proxySecret ? 'SET' : 'NOT SET'}`)
 
     // Step 1: Auth test (via plant list)
     const authResult = await testAuth(effectiveBase, headers)
