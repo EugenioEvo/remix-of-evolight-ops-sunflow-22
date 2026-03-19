@@ -129,6 +129,9 @@ serve(async (req) => {
 
     const headers = solarzHeaders(SOLARZ_USERNAME, SOLARZ_PASSWORD)
 
+    console.log('SolarZ API URL:', SOLARZ_API_URL)
+    console.log('First request URL:', `${SOLARZ_API_URL}/openApi/seller/plantWithInfos/list?page=1&pageSize=100`)
+
     // ── 2. Fetch ALL plants from SolarZ (paginated) ──────
     let allSolarzPlants: any[] = []
     let page = 1
