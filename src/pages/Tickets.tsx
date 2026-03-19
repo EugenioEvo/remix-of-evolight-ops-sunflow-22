@@ -61,15 +61,15 @@ const Tickets = () => {
   const queryClient = useQueryClient();
 
   // React Query hooks
-  const { data: ticketsData, isLoading: ticketsLoading } = useTicketsQuery({
-    searchTerm: debouncedSearchTerm,
+  const { data: ticketsData, isLoading: ticketsLoading } = useTickets({
+    search: debouncedSearchTerm,
   });
-  const { data: clientesData } = useClientesQuery();
-  const { data: prestadoresData } = usePrestadoresQuery();
+  const { data: clientesData } = useClientes();
+  const { data: prestadoresData } = usePrestadores();
 
-  const createTicketMutation = useCreateTicketMutation();
-  const updateTicketMutation = useUpdateTicketMutation();
-  const deleteTicketMutation = useDeleteTicketMutation();
+  const createTicketMutation = useCreateTicket();
+  const updateTicketMutation = useUpdateTicket();
+  const deleteTicketMutation = useDeleteTicket();
 
   const tickets = ticketsData?.tickets ?? [];
   const clientes = clientesData ?? [];
