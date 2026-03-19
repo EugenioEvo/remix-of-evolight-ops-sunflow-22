@@ -156,7 +156,10 @@ serve(async (req) => {
   const results: TestResult[] = []
 
   try {
-    const baseUrl = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
+    let baseUrl = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
+    if (baseUrl && !baseUrl.startsWith('http')) {
+      baseUrl = 'https://' + baseUrl
+    }
     const username = Deno.env.get('SOLARZ_USERNAME') ?? ''
     const password = Deno.env.get('SOLARZ_PASSWORD') ?? ''
     const proxyUrl = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null

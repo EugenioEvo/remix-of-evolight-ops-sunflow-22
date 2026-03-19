@@ -98,7 +98,10 @@ serve(async (req) => {
 
   try {
     // ── 1. Validate env ──────────────────────────────────
-    const SOLARZ_API_URL = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
+    let SOLARZ_API_URL = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
+    if (SOLARZ_API_URL && !SOLARZ_API_URL.startsWith('http')) {
+      SOLARZ_API_URL = 'https://' + SOLARZ_API_URL
+    }
     const SOLARZ_PROXY_SECRET = Deno.env.get('SOLARZ_PROXY_SECRET')
 
     if (!SOLARZ_API_URL || !SOLARZ_PROXY_SECRET) {
