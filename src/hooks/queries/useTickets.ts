@@ -58,8 +58,8 @@ export function useUpdateTicket() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: TicketUpdate }) =>
-      ticketService.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: TicketUpdate | Record<string, any> }) =>
+      ticketService.update(id, data as TicketUpdate),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ticketKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: ticketKeys.lists() });

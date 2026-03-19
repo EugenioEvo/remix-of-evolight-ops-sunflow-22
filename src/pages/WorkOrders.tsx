@@ -78,7 +78,7 @@ const WorkOrders = () => {
   const navigate = useNavigate();
 
   const { data: workOrders = [], isLoading: loading } = useWorkOrdersQuery();
-  const { data: clientes = [] } = useClientesQuery();
+  const { data: clientes = [] } = useClientes();
   const deleteOSMutation = useDeleteWorkOrder();
   const sendEmailMutation = useSendCalendarInvite();
 
