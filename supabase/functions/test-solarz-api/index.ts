@@ -25,12 +25,26 @@ async function testAuth(baseUrl: string, headers: Record<string, string>): Promi
   const start = Date.now()
   try {
     // Basic Auth doesn't have a login endpoint — test by listing plants
-    const res = await fetch(`${baseUrl}/openApi/seller/plantWithInfos/list`, {
+    const url = `${baseUrl}/openApi/seller/plantWithInfos/list`
+    console.log(`[test-solarz-api] Testing auth at: ${url}`)
+    console.log(`[test-solarz-api] Auth header: ${headers['Authorization']?.substring(0, 20)}...`)
+    const res = await fetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({ page: 0, pageSize: 1 }),
     })
-    const body = await res.json()
+    const rawText = await res.text()
+    console.log(`[test-solarz-api] Response status: ${res.status}, content-type: ${res.headers.get('content-type')}`)
+    console.log(`[test-solarz-api] Response body preview: ${rawText.substring(0, 200)}`)
+    
+    // Try to parse as JSON
+    let body: any
+    try {
+      body = JSON.parse(rawText)
+    } catch {
+      return { step: 'auth', success: false, duration_ms: Date.now() - start, error: `Response is not JSON (status ${res.status}). Content-type: ${res.headers.get('content-type')}. Body preview: ${rawText.substring(0, 300)}` }
+    }
+    
     if (!res.ok) {
       return { step: 'auth', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
     }
