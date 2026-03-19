@@ -184,7 +184,7 @@ export default function DashboardPresenca() {
       previousOSRef.current = currentOSMap;
       setOrdensServico(ordensServicoData);
     } catch (error) {
-      console.error("Erro ao carregar ordens de serviço:", error);
+      logger.error("Erro ao carregar ordens de serviço:", error);
       toast.error("Erro ao carregar ordens de serviço");
     } finally {
       setLoading(false);
