@@ -364,9 +364,7 @@ const RMEWizard = () => {
 
   const updateChecklistItem = async (itemId: string, checked: boolean) => {
     try {
-      await mutateData(
-        supabase.from("rme_checklist_items").update({ checked }).eq("id", itemId).select().single()
-      );
+      await updateChecklistItemMutation.mutateAsync({ id: itemId, checked });
       setChecklistItems((prev) =>
         prev.map((item) => (item.id === itemId ? { ...item, checked } : item))
       );
