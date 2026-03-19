@@ -159,16 +159,23 @@ serve(async (req) => {
     const baseUrl = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
     const username = Deno.env.get('SOLARZ_USERNAME') ?? ''
     const password = Deno.env.get('SOLARZ_PASSWORD') ?? ''
+    const proxyUrl = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null
+    const proxySecret = Deno.env.get('SOLARZ_PROXY_SECRET') || null
 
     if (!baseUrl || !username || !password) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing secrets. Required: SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD',
-        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_USERNAME: !!username, SOLARZ_PASSWORD: !!password },
+        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_USERNAME: !!username, SOLARZ_PASSWORD: !!password, SOLARZ_PROXY_URL: !!proxyUrl },
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const headers = solarzHeaders(username, password)
+    // If proxy is configured, use proxy headers; otherwise direct
+    const headers = proxyUrl && proxySecret
+      ? { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Proxy-Secret': proxySecret }
+      : solarzHeaders(username, password)
+
+    const effectiveBase = proxyUrl || baseUrl
 
     let testMode = 'all'
     let plantId: string | undefined
@@ -178,10 +185,10 @@ serve(async (req) => {
       plantId = body.plant_id
     } catch { /* default to 'all' */ }
 
-    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}`)
+    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy: ${proxyUrl || 'NONE'}`)
 
     // Step 1: Auth test (via plant list)
-    const authResult = await testAuth(baseUrl, headers)
+    const authResult = await testAuth(effectiveBase, headers)
     results.push(authResult)
 
     if (!authResult.success || testMode === 'auth') {
@@ -195,7 +202,7 @@ serve(async (req) => {
 
     // Step 2: Plants
     if (['all', 'plants'].includes(testMode)) {
-      const plantsResult = await testPlants(baseUrl, headers)
+      const plantsResult = await testPlants(effectiveBase, headers)
       results.push(plantsResult.result)
       if (!plantId && plantsResult.plants && plantsResult.plants.length > 0) {
         plantId = String(plantsResult.plants[0].id)
@@ -214,10 +221,10 @@ serve(async (req) => {
     // Step 3: Detailed tests for a specific plant
     if (plantId && ['all', 'metrics'].includes(testMode)) {
       const [statusResult, powerResult, perfResult, energyResult] = await Promise.all([
-        testStatus(baseUrl, headers, plantId),
-        testPower(baseUrl, headers, plantId),
-        testPerformance(baseUrl, headers, plantId),
-        testEnergy(baseUrl, headers, plantId),
+        testStatus(effectiveBase, headers, plantId),
+        testPower(effectiveBase, headers, plantId),
+        testPerformance(effectiveBase, headers, plantId),
+        testEnergy(effectiveBase, headers, plantId),
       ])
       results.push(statusResult, powerResult, perfResult, energyResult)
     }
