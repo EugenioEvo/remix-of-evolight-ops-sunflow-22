@@ -104,9 +104,7 @@ serve(async (req) => {
     let page = 1
     while (true) {
       const res = await solarzPost(
-        buildRequestUrl(SOLARZ_API_URL, SOLARZ_PROXY_URL, `/openApi/seller/plantWithInfos/list?page=${page}&pageSize=100`),
-        headers,
-        {},
+        `${SOLARZ_API_URL}/openApi/seller/plantWithInfos/list?page=${page}&pageSize=100`,
       )
       allSolarzPlants.push(...(res.content || []))
       if (res.last === true || (res.content || []).length === 0) break
