@@ -259,7 +259,7 @@ serve(async (req) => {
         // ── 4b. Low generation check ─────────────────────
         try {
           const perfData = await solarzPost(
-            `${SOLARZ_API_URL}/openApi/seller/plant/performance/plantId/${szPlant.id}`,
+            buildRequestUrl(SOLARZ_API_URL, SOLARZ_PROXY_URL, `/openApi/seller/plant/performance/plantId/${szPlant.id}`),
             headers,
           )
 
