@@ -1,39 +1,21 @@
 
 
-# Plano: Edge Function para Testar API SolarZ
+## Plano: Corrigir URL do Worker SolarZ
 
-## Objetivo
-Criar uma Edge Function dedicada (`test-solarz-api`) que testa a conectividade e autenticação com a API SolarZ e retorna os dados brutos para validação.
+### Problema
+O secret `SOLARZ_API_URL` está configurado como `solarz-proxy.eugenio-a45.workers.dev` (sem protocolo). O `fetch()` do Deno exige uma URL completa com `https://`.
 
-## O que será criado
+### Solução (2 camadas de proteção)
 
-### 1. `supabase/functions/test-solarz-api/index.ts`
+1. **Atualizar o secret `SOLARZ_API_URL`** para incluir `https://` no início
+2. **Adicionar fallback no código** do `agent-monitor` para que, se o protocolo estiver ausente, ele seja adicionado automaticamente:
+   ```typescript
+   let SOLARZ_API_URL = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
+   if (SOLARZ_API_URL && !SOLARZ_API_URL.startsWith('http')) {
+     SOLARZ_API_URL = 'https://' + SOLARZ_API_URL
+   }
+   ```
 
-Edge Function que:
-- Lê credenciais dos secrets existentes (`SOLARZ_API_URL`, `SOLARZ_USERNAME`, `SOLARZ_PASSWORD`)
-- Tenta autenticar na API SolarZ (`POST /auth/login`)
-- Se autenticação OK, busca lista de plantas (`GET /plants`)
-- Para a primeira planta encontrada, busca métricas recentes e alertas
-- Retorna um JSON consolidado com:
-  - Status da autenticação (token obtido? tempo de resposta?)
-  - Lista de plantas encontradas
-  - Amostra de métricas (últimas 24h da primeira planta)
-  - Alertas ativos
-  - Erros encontrados em cada etapa
-
-Aceita POST com body opcional:
-- `{ test: "auth" }` — testa só autenticação
-- `{ test: "plants" }` — lista plantas
-- `{ test: "metrics", plant_id: "..." }` — métricas de uma planta específica
-- `{ test: "all" }` (default) — executa tudo
-
-### 2. Atualizar `supabase/config.toml`
-
-Registrar a nova função com `verify_jwt = false`.
-
-## Padrão seguido
-- Mesmo CORS headers das demais Edge Functions
-- Usa os secrets já configurados (`SOLARZ_API_URL`, `SOLARZ_USERNAME`, `SOLARZ_PASSWORD`)
-- Não altera nenhum dado no banco — apenas leitura da API externa
-- Loga resultados no console para debugging via edge function logs
+### Resultado esperado
+A função `agent-monitor` conseguirá se conectar ao Cloudflare Worker e processar as plantas SolarZ.
 
