@@ -197,7 +197,7 @@ const RouteMap: React.FC = () => {
 
       setOrdensServico(filteredData);
     } catch (error) {
-      console.error('Erro ao carregar ordens de serviço:', error);
+      logger.error('Erro ao carregar ordens de serviço:', error);
     } finally {
       setLoading(false);
     }
