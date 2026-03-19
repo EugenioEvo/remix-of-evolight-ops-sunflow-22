@@ -366,7 +366,7 @@ export default function DashboardPresenca() {
       doc.save(`confirmacoes_presenca_${format(new Date(), "yyyy-MM-dd")}.pdf`);
       toast.success("PDF exportado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar PDF:", error);
+      logger.error("Erro ao exportar PDF:", error);
       toast.error("Erro ao exportar PDF");
     } finally {
       setExporting(false);
