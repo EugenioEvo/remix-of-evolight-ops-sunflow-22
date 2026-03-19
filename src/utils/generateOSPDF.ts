@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import logger from '@/lib/logger';
 
 interface OSData {
   numero_os: string;
