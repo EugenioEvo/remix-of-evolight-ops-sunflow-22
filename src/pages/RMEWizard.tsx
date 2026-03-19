@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchData, mutateData } from "@/services/api";
+import { fetchData } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateRME, useUpdateRME, usePopulateChecklist, useUpdateChecklistItem } from "@/hooks/queries";
 import { ArrowLeft, Save, Check, Loader2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -85,6 +86,10 @@ const RMEWizard = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const createRME = useCreateRME();
+  const updateRME = useUpdateRME();
+  const populateChecklist = usePopulateChecklist();
+  const updateChecklistItemMutation = useUpdateChecklistItem();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -296,19 +301,15 @@ const RMEWizard = () => {
 
       if (rmeId) {
         // Update existing
-        await mutateData(
-          supabase.from("rme_relatorios").update(payload).eq("id", rmeId).select().single()
-        );
+        await updateRME.mutateAsync({ id: rmeId, data: payload });
       } else {
         // Create new
-        const data = await mutateData(
-          supabase.from("rme_relatorios").insert([payload]).select().single()
-        );
+        const data = await createRME.mutateAsync(payload);
         rmeId = data.id;
         setFormData((prev) => ({ ...prev, id: rmeId }));
 
         // Populate checklist from catalog
-        await supabase.rpc("populate_rme_checklist", { p_rme_id: rmeId });
+        await populateChecklist.mutateAsync(rmeId!);
 
         // Load checklist items
         const items = await fetchData(
@@ -363,9 +364,7 @@ const RMEWizard = () => {
 
   const updateChecklistItem = async (itemId: string, checked: boolean) => {
     try {
-      await mutateData(
-        supabase.from("rme_checklist_items").update({ checked }).eq("id", itemId).select().single()
-      );
+      await updateChecklistItemMutation.mutateAsync({ id: itemId, checked });
       setChecklistItems((prev) =>
         prev.map((item) => (item.id === itemId ? { ...item, checked } : item))
       );
