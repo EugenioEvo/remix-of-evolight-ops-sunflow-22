@@ -159,16 +159,23 @@ serve(async (req) => {
     const baseUrl = (Deno.env.get('SOLARZ_API_URL') ?? '').replace(/\/$/, '')
     const username = Deno.env.get('SOLARZ_USERNAME') ?? ''
     const password = Deno.env.get('SOLARZ_PASSWORD') ?? ''
+    const proxyUrl = (Deno.env.get('SOLARZ_PROXY_URL') ?? '').replace(/\/$/, '') || null
+    const proxySecret = Deno.env.get('SOLARZ_PROXY_SECRET') || null
 
     if (!baseUrl || !username || !password) {
       return new Response(JSON.stringify({
         success: false,
         error: 'Missing secrets. Required: SOLARZ_API_URL, SOLARZ_USERNAME, SOLARZ_PASSWORD',
-        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_USERNAME: !!username, SOLARZ_PASSWORD: !!password },
+        configured: { SOLARZ_API_URL: !!baseUrl, SOLARZ_USERNAME: !!username, SOLARZ_PASSWORD: !!password, SOLARZ_PROXY_URL: !!proxyUrl },
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const headers = solarzHeaders(username, password)
+    // If proxy is configured, use proxy headers; otherwise direct
+    const headers = proxyUrl && proxySecret
+      ? { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-Proxy-Secret': proxySecret }
+      : solarzHeaders(username, password)
+
+    const effectiveBase = proxyUrl || baseUrl
 
     let testMode = 'all'
     let plantId: string | undefined
@@ -178,7 +185,7 @@ serve(async (req) => {
       plantId = body.plant_id
     } catch { /* default to 'all' */ }
 
-    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}`)
+    console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy: ${proxyUrl || 'NONE'}`)
 
     // Step 1: Auth test (via plant list)
     const authResult = await testAuth(baseUrl, headers)
