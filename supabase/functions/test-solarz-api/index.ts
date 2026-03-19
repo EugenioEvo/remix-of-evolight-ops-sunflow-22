@@ -202,7 +202,7 @@ serve(async (req) => {
 
     // Step 2: Plants
     if (['all', 'plants'].includes(testMode)) {
-      const plantsResult = await testPlants(baseUrl, headers)
+      const plantsResult = await testPlants(effectiveBase, headers)
       results.push(plantsResult.result)
       if (!plantId && plantsResult.plants && plantsResult.plants.length > 0) {
         plantId = String(plantsResult.plants[0].id)
