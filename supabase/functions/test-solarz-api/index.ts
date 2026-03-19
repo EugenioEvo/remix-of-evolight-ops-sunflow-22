@@ -188,7 +188,7 @@ serve(async (req) => {
     console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}, Proxy: ${proxyUrl || 'NONE'}`)
 
     // Step 1: Auth test (via plant list)
-    const authResult = await testAuth(baseUrl, headers)
+    const authResult = await testAuth(effectiveBase, headers)
     results.push(authResult)
 
     if (!authResult.success || testMode === 'auth') {
