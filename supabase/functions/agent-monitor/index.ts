@@ -59,6 +59,39 @@ function classifyAlert(type: string, rawSeverity?: string): { tipo: string; seve
   return { tipo, severidade: sevMap[rawSeverity ?? ''] ?? 'info' }
 }
 
+// ── Dispatch helpers ────────────────────────────────────────
+
+async function dispatchCritical(
+  supabaseAdmin: any,
+  plantId: string,
+  tipo: string,
+  severidade: string,
+) {
+  try {
+    await supabaseAdmin.functions.invoke('agent-dispatcher', {
+      body: { plant_id: plantId, alert_type: tipo, severity: severidade },
+    })
+  } catch (err) {
+    console.warn('Dispatcher invocation failed (may not exist yet):', err)
+  }
+}
+
+async function dispatchJarvis(
+  supabaseAdmin: any,
+  alertId: string,
+  plantId: string,
+  tipo: string,
+  severidade: string,
+) {
+  try {
+    await supabaseAdmin.functions.invoke('jarvis-orchestrator', {
+      body: { alert_id: alertId, plant_id: plantId, tipo, severidade },
+    })
+  } catch (err) {
+    console.warn('JARVIS invocation failed:', err)
+  }
+}
+
 // ── Main handler ────────────────────────────────────────────
 
 serve(async (req) => {
@@ -70,6 +103,7 @@ serve(async (req) => {
   let alertsCreated = 0
   let metricsChecked = 0
   let plantsProcessed = 0
+  let jarvisInvocations = 0
   let errorMessage: string | null = null
 
   const supabaseAdmin = createClient(
@@ -116,7 +150,7 @@ serve(async (req) => {
           const alertExternalId = raw.id ?? raw.alert_id
           if (!alertExternalId) continue
 
-          // Check if already exists (by dados_contexto->external_id)
+          // Check if already exists
           const { data: existing } = await supabaseAdmin
             .from('solar_alerts')
             .select('id')
@@ -128,7 +162,7 @@ serve(async (req) => {
 
           const { tipo, severidade } = classifyAlert(raw.type ?? raw.tipo, raw.severity)
 
-          const { error: insertErr } = await supabaseAdmin
+          const { data: insertedAlert, error: insertErr } = await supabaseAdmin
             .from('solar_alerts')
             .insert([{
               plant_id: plant.id,
@@ -139,23 +173,22 @@ serve(async (req) => {
               dados_contexto: { external_id: alertExternalId, raw_data: raw },
               status: 'aberto',
             }])
+            .select('id')
+            .single()
 
           if (insertErr) {
             console.error(`Failed to insert alert for plant ${plant.id}:`, insertErr)
           } else {
             alertsCreated++
 
-            // If critical, invoke dispatcher (future JARVIS step)
+            // Route based on severity
             if (severidade === 'critical') {
-              try {
-                await supabaseAdmin.functions.invoke('agent-dispatcher', {
-                  body: { plant_id: plant.id, alert_type: tipo, severity: severidade },
-                })
-              } catch (dispatchErr) {
-                // Non-fatal: dispatcher may not exist yet
-                console.warn('Dispatcher invocation failed (may not exist yet):', dispatchErr)
-              }
+              await dispatchCritical(supabaseAdmin, plant.id, tipo, severidade)
+            } else if (severidade === 'warning') {
+              jarvisInvocations++
+              await dispatchJarvis(supabaseAdmin, insertedAlert.id, plant.id, tipo, severidade)
             }
+            // info → no dispatch, just logged
           }
         }
 
@@ -211,7 +244,7 @@ serve(async (req) => {
 
           if (historicalMetrics && historicalMetrics.length > 0) {
             const avgHistorical =
-              historicalMetrics.reduce((sum, m) => sum + (Number(m.geracao_kwh) || 0), 0) /
+              historicalMetrics.reduce((sum: number, m: any) => sum + (Number(m.geracao_kwh) || 0), 0) /
               historicalMetrics.length
 
             const currentTotal = rawMetrics.reduce(
@@ -234,16 +267,26 @@ serve(async (req) => {
 
               if (!existingLowGen) {
                 const ratio = Math.round((currentAvg / avgHistorical) * 100)
-                await supabaseAdmin.from('solar_alerts').insert([{
-                  plant_id: plant.id,
-                  tipo: 'baixa_geracao',
-                  severidade: 'warning',
-                  titulo: `Baixa geração: ${ratio}% da média`,
-                  descricao: `Planta ${plant.nome} gerando ${ratio}% da média histórica (${avgHistorical.toFixed(1)} kWh avg vs ${currentAvg.toFixed(1)} kWh atual).`,
-                  dados_contexto: { avg_historical: avgHistorical, current_avg: currentAvg, ratio },
-                  status: 'aberto',
-                }])
-                alertsCreated++
+                const { data: insertedLowGen, error: lowGenErr } = await supabaseAdmin
+                  .from('solar_alerts')
+                  .insert([{
+                    plant_id: plant.id,
+                    tipo: 'baixa_geracao',
+                    severidade: 'warning',
+                    titulo: `Baixa geração: ${ratio}% da média`,
+                    descricao: `Planta ${plant.nome} gerando ${ratio}% da média histórica (${avgHistorical.toFixed(1)} kWh avg vs ${currentAvg.toFixed(1)} kWh atual).`,
+                    dados_contexto: { avg_historical: avgHistorical, current_avg: currentAvg, ratio },
+                    status: 'aberto',
+                  }])
+                  .select('id')
+                  .single()
+
+                if (!lowGenErr && insertedLowGen) {
+                  alertsCreated++
+                  // baixa_geracao is warning → route through JARVIS
+                  jarvisInvocations++
+                  await dispatchJarvis(supabaseAdmin, insertedLowGen.id, plant.id, 'baixa_geracao', 'warning')
+                }
               }
             }
           }
@@ -261,23 +304,25 @@ serve(async (req) => {
                 .maybeSingle()
 
               if (!existingTemp) {
-                await supabaseAdmin.from('solar_alerts').insert([{
-                  plant_id: plant.id,
-                  tipo: 'temperatura',
-                  severidade: 'critical',
-                  titulo: `Temperatura inversor elevada: ${temp.toFixed(1)}°C`,
-                  descricao: `Inversor da planta ${plant.nome} atingiu ${temp.toFixed(1)}°C (limite: ${HIGH_TEMP_CELSIUS}°C).`,
-                  dados_contexto: { temperature: temp, threshold: HIGH_TEMP_CELSIUS, timestamp: m.timestamp },
-                  status: 'aberto',
-                }])
-                alertsCreated++
+                const { data: insertedTemp, error: tempErr } = await supabaseAdmin
+                  .from('solar_alerts')
+                  .insert([{
+                    plant_id: plant.id,
+                    tipo: 'temperatura',
+                    severidade: 'critical',
+                    titulo: `Temperatura inversor elevada: ${temp.toFixed(1)}°C`,
+                    descricao: `Inversor da planta ${plant.nome} atingiu ${temp.toFixed(1)}°C (limite: ${HIGH_TEMP_CELSIUS}°C).`,
+                    dados_contexto: { temperature: temp, threshold: HIGH_TEMP_CELSIUS, timestamp: m.timestamp },
+                    status: 'aberto',
+                  }])
+                  .select('id')
+                  .single()
 
-                // Critical → dispatch
-                try {
-                  await supabaseAdmin.functions.invoke('agent-dispatcher', {
-                    body: { plant_id: plant.id, alert_type: 'temperatura', severity: 'critical' },
-                  })
-                } catch { /* dispatcher may not exist yet */ }
+                if (!tempErr && insertedTemp) {
+                  alertsCreated++
+                  // temperatura is critical → dispatch directly
+                  await dispatchCritical(supabaseAdmin, plant.id, 'temperatura', 'critical')
+                }
               }
               break // one temp alert per plant per run
             }
@@ -287,7 +332,7 @@ serve(async (req) => {
         // Update last sync timestamp
         await supabaseAdmin
           .from('solar_plants')
-          .update({ ultima_sincronizacao: now.toISOString() })
+          .update({ ultima_sincronizacao: new Date().toISOString() })
           .eq('id', plant.id)
 
       } catch (plantErr) {
@@ -311,7 +356,7 @@ serve(async (req) => {
       duration_ms: durationMs,
       error_message: errorMessage,
       input_data: { plants_processed: plantsProcessed },
-      output_data: { alerts_created: alertsCreated, metrics_checked: metricsChecked },
+      output_data: { alerts_created: alertsCreated, metrics_checked: metricsChecked, jarvis_invocations: jarvisInvocations },
     }])
   } catch (logErr) {
     console.error('Failed to write agent log:', logErr)
@@ -323,6 +368,7 @@ serve(async (req) => {
     plants_processed: plantsProcessed,
     alerts_created: alertsCreated,
     metrics_checked: metricsChecked,
+    jarvis_invocations: jarvisInvocations,
     error: errorMessage,
   }
 
