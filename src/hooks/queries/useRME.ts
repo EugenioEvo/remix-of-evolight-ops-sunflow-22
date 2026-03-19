@@ -90,7 +90,11 @@ export function useUpdateChecklistItem() {
 export function usePopulateChecklist() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (rmeId: string) => supabase.rpc('populate_rme_checklist', { p_rme_id: rmeId }),
+    mutationFn: async (rmeId: string) => {
+      const { data, error } = await supabase.rpc('populate_rme_checklist', { p_rme_id: rmeId });
+      if (error) throw error;
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rme-checklist'] });
     },
