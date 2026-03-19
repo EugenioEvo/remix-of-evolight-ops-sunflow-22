@@ -114,7 +114,7 @@ export default function DashboardPresenca() {
       if (error) throw error;
       setTecnicos((data || []) as Tecnico[]);
     } catch (error) {
-      console.error("Erro ao carregar técnicos:", error);
+      logger.error("Erro ao carregar técnicos:", error);
     }
   };
 
