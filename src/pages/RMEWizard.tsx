@@ -301,19 +301,15 @@ const RMEWizard = () => {
 
       if (rmeId) {
         // Update existing
-        await mutateData(
-          supabase.from("rme_relatorios").update(payload).eq("id", rmeId).select().single()
-        );
+        await updateRME.mutateAsync({ id: rmeId, data: payload });
       } else {
         // Create new
-        const data = await mutateData(
-          supabase.from("rme_relatorios").insert([payload]).select().single()
-        );
+        const data = await createRME.mutateAsync(payload);
         rmeId = data.id;
         setFormData((prev) => ({ ...prev, id: rmeId }));
 
         // Populate checklist from catalog
-        await supabase.rpc("populate_rme_checklist", { p_rme_id: rmeId });
+        await populateChecklist.mutateAsync(rmeId!);
 
         // Load checklist items
         const items = await fetchData(
