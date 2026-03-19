@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.agent-verificador]
 verify_jwt = false
+
+[functions.test-solarz-api]
+verify_jwt = false
