@@ -441,7 +441,7 @@ export default function DashboardPresenca() {
       XLSX.writeFile(workbook, `confirmacoes_presenca_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
       toast.success("Excel exportado com sucesso!");
     } catch (error) {
-      console.error("Erro ao exportar Excel:", error);
+      logger.error("Erro ao exportar Excel:", error);
       toast.error("Erro ao exportar Excel");
     } finally {
       setExporting(false);

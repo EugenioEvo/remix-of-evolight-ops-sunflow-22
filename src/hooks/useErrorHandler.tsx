@@ -52,7 +52,7 @@ export const useErrorHandler = () => {
 
     // Log in development only
     if (logError) {
-      console.error('[Error]', appError);
+      logger.error('[Error]', appError);
     }
 
     // Show toast notification

@@ -58,7 +58,7 @@ export const EditTechnicianEmailDialog = ({
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {
-      console.error('Erro ao atualizar email:', error);
+      logger.error('Erro ao atualizar email:', error);
       toast({
         title: 'Erro ao atualizar',
         description: error.message,

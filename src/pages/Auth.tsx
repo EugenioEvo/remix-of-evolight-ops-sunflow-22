@@ -179,7 +179,7 @@ const Auth = () => {
         const { error: profileError } = await supabase.functions.invoke('create-user-profile');
         
         if (profileError) {
-          console.error('Erro ao criar perfil:', profileError);
+          logger.error('Erro ao criar perfil:', profileError);
         }
 
         // Aguardar profile ser criado com polling (máximo 3 segundos)

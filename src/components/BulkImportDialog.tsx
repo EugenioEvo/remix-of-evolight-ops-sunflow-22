@@ -89,7 +89,7 @@ export function BulkImportDialog({ open, onOpenChange, onImportComplete }: BulkI
       setValidatedData(validated);
       setStep('preview');
     } catch (error) {
-      console.error('Erro ao processar arquivo:', error);
+      logger.error('Erro ao processar arquivo:', error);
       toast.error('Erro ao processar arquivo');
     }
   };

@@ -69,7 +69,7 @@ export const PresenceConfirmationStatus = ({
 
       setQrCodeDataURL(qrDataURL);
     } catch (error) {
-      console.error('Erro ao gerar QR Code:', error);
+      logger.error('Erro ao gerar QR Code:', error);
     }
   };
 

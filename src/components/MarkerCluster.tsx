@@ -113,7 +113,7 @@ const MarkerCluster: React.FC<MarkerClusterProps> = ({ markers, disableClusterin
       clusterGroupRef.current = clusterGroup;
       map.addLayer(clusterGroup);
     } catch (error) {
-      console.error('MarkerCluster error:', error);
+      logger.error('MarkerCluster error:', error);
     }
 
     // Cleanup on unmount

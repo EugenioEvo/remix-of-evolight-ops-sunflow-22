@@ -415,7 +415,7 @@ const RouteMap: React.FC = () => {
       if (error) throw error;
       toast.success("Ordem das paradas salva!");
     } catch (err) {
-      console.error('Erro ao persistir ordem:', err);
+      logger.error('Erro ao persistir ordem:', err);
       toast.error("Erro ao salvar ordem no banco");
     }
   }, [rotasOtimizadas]);
