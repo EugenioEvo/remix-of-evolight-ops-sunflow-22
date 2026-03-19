@@ -88,7 +88,7 @@ const RouteMap: React.FC = () => {
         .limit(1);
 
       if (error) {
-        console.warn('⚠️ Erro ao carregar rota persistida:', error);
+        logger.warn('⚠️ Erro ao carregar rota persistida:', error);
         return;
       }
 
