@@ -1,5 +1,5 @@
 // SolarZ API adapter – implements ISolarMonitoringSource
-// Uses Basic Auth and real SolarZ OpenAPI endpoints
+// Uses Cloudflare Worker proxy with X-Proxy-Secret header
 import logger from '@/lib/logger';
 import type {
   ISolarMonitoringSource,
