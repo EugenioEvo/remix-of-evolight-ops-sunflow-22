@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchData, mutateData } from "@/services/api";
+import { fetchData } from "@/services/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateRME, useUpdateRME, usePopulateChecklist, useUpdateChecklistItem } from "@/hooks/queries";
 import { ArrowLeft, Save, Check, Loader2, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
