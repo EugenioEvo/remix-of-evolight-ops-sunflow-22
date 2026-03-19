@@ -13,38 +13,47 @@ interface TestResult {
   error?: string
 }
 
-async function testAuth(baseUrl: string, username: string, password: string): Promise<{ result: TestResult; token?: string }> {
-  const start = Date.now()
-  try {
-    const res = await fetch(`${baseUrl}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    })
-    const body = await res.json()
-    if (!res.ok) {
-      return { result: { step: 'auth', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` } }
-    }
-    return {
-      result: { step: 'auth', success: true, duration_ms: Date.now() - start, data: { token_preview: body.token?.slice(0, 20) + '…', expiresAt: body.expiresAt } },
-      token: body.token,
-    }
-  } catch (err) {
-    return { result: { step: 'auth', success: false, duration_ms: Date.now() - start, error: String(err) } }
+function solarzHeaders(username: string, password: string): Record<string, string> {
+  const credentials = btoa(`${username}:${password}`)
+  return {
+    'Authorization': `Basic ${credentials}`,
+    'Content-Type': 'application/json',
   }
 }
 
-async function testPlants(baseUrl: string, token: string): Promise<{ result: TestResult; plants?: any[] }> {
+async function testAuth(baseUrl: string, headers: Record<string, string>): Promise<TestResult> {
   const start = Date.now()
   try {
-    const res = await fetch(`${baseUrl}/plants`, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    // Basic Auth doesn't have a login endpoint — test by listing plants
+    const res = await fetch(`${baseUrl}/openApi/seller/plantWithInfos/list`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ page: 0, pageSize: 1 }),
+    })
+    const body = await res.json()
+    if (!res.ok) {
+      return { step: 'auth', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
+    }
+    const count = Array.isArray(body.content) ? body.content.length : 0
+    return { step: 'auth', success: true, duration_ms: Date.now() - start, data: { message: 'Basic Auth OK', plants_in_page: count } }
+  } catch (err) {
+    return { step: 'auth', success: false, duration_ms: Date.now() - start, error: String(err) }
+  }
+}
+
+async function testPlants(baseUrl: string, headers: Record<string, string>): Promise<{ result: TestResult; plants?: any[] }> {
+  const start = Date.now()
+  try {
+    const res = await fetch(`${baseUrl}/openApi/seller/plantWithInfos/list`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ page: 0, pageSize: 10 }),
     })
     const body = await res.json()
     if (!res.ok) {
       return { result: { step: 'plants', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` } }
     }
-    const plants = Array.isArray(body) ? body : []
+    const plants = Array.isArray(body.content) ? body.content : []
     return {
       result: { step: 'plants', success: true, duration_ms: Date.now() - start, data: { count: plants.length, plants: plants.slice(0, 5) } },
       plants,
@@ -54,58 +63,70 @@ async function testPlants(baseUrl: string, token: string): Promise<{ result: Tes
   }
 }
 
-async function testMetrics(baseUrl: string, token: string, plantId: string): Promise<TestResult> {
+async function testStatus(baseUrl: string, headers: Record<string, string>, plantId: string): Promise<TestResult> {
   const start = Date.now()
   try {
-    const end = new Date().toISOString()
-    const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-    const qs = `start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(end)}`
-    const res = await fetch(`${baseUrl}/plants/${plantId}/metrics?${qs}`, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
+    const res = await fetch(`${baseUrl}/openApi/seller/plant/status?id=${plantId}`, { headers })
     const body = await res.json()
     if (!res.ok) {
-      return { step: 'metrics', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
+      return { step: 'status', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
     }
-    const metrics = Array.isArray(body) ? body : []
-    return { step: 'metrics', success: true, duration_ms: Date.now() - start, data: { plant_id: plantId, count: metrics.length, sample: metrics.slice(0, 3) } }
+    return { step: 'status', success: true, duration_ms: Date.now() - start, data: body }
   } catch (err) {
-    return { step: 'metrics', success: false, duration_ms: Date.now() - start, error: String(err) }
+    return { step: 'status', success: false, duration_ms: Date.now() - start, error: String(err) }
   }
 }
 
-async function testAlerts(baseUrl: string, token: string, plantId?: string): Promise<TestResult> {
+async function testPower(baseUrl: string, headers: Record<string, string>, plantId: string): Promise<TestResult> {
   const start = Date.now()
   try {
-    const path = plantId ? `/plants/${plantId}/alerts` : '/alerts'
-    const res = await fetch(`${baseUrl}${path}`, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    })
+    const res = await fetch(`${baseUrl}/openApi/seller/plant/power?id=${plantId}`, { headers })
     const body = await res.json()
     if (!res.ok) {
-      return { step: 'alerts', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
+      return { step: 'power', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
     }
-    const alerts = Array.isArray(body) ? body : []
-    return { step: 'alerts', success: true, duration_ms: Date.now() - start, data: { count: alerts.length, alerts: alerts.slice(0, 5) } }
+    return { step: 'power', success: true, duration_ms: Date.now() - start, data: body }
   } catch (err) {
-    return { step: 'alerts', success: false, duration_ms: Date.now() - start, error: String(err) }
+    return { step: 'power', success: false, duration_ms: Date.now() - start, error: String(err) }
   }
 }
 
-async function testDevices(baseUrl: string, token: string, plantId: string): Promise<TestResult> {
+async function testPerformance(baseUrl: string, headers: Record<string, string>, plantId: string): Promise<TestResult> {
   const start = Date.now()
   try {
-    const res = await fetch(`${baseUrl}/plants/${plantId}/devices`, {
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    const res = await fetch(`${baseUrl}/openApi/seller/plant/performance/plantId/${plantId}`, {
+      method: 'POST',
+      headers,
     })
     const body = await res.json()
     if (!res.ok) {
-      return { step: 'devices', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
+      return { step: 'performance', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
     }
-    const devices = Array.isArray(body) ? body : []
-    return { step: 'devices', success: true, duration_ms: Date.now() - start, data: { plant_id: plantId, count: devices.length, devices: devices.slice(0, 5) } }
+    return { step: 'performance', success: true, duration_ms: Date.now() - start, data: body }
   } catch (err) {
-    return { step: 'devices', success: false, duration_ms: Date.now() - start, error: String(err) }
+    return { step: 'performance', success: false, duration_ms: Date.now() - start, error: String(err) }
+  }
+}
+
+async function testEnergy(baseUrl: string, headers: Record<string, string>, plantId: string): Promise<TestResult> {
+  const start = Date.now()
+  try {
+    const now = new Date()
+    const from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const fromDate = from.toISOString().substring(0, 10)
+    const toDate = now.toISOString().substring(0, 10)
+    const res = await fetch(
+      `${baseUrl}/openApi/seller/plant/energy/dayRange?plantId=${plantId}&fromLocalDate=${fromDate}&toLocalDate=${toDate}`,
+      { method: 'POST', headers, body: JSON.stringify({ plantId: parseInt(plantId), fromLocalDate: fromDate, toLocalDate: toDate }) },
+    )
+    const body = await res.json()
+    if (!res.ok) {
+      return { step: 'energy', success: false, duration_ms: Date.now() - start, error: `HTTP ${res.status}: ${JSON.stringify(body)}` }
+    }
+    const entries = Array.isArray(body) ? body : []
+    return { step: 'energy', success: true, duration_ms: Date.now() - start, data: { count: entries.length, sample: entries.slice(0, 3) } }
+  } catch (err) {
+    return { step: 'energy', success: false, duration_ms: Date.now() - start, error: String(err) }
   }
 }
 
@@ -130,40 +151,37 @@ serve(async (req) => {
       }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Parse request body
+    const headers = solarzHeaders(username, password)
+
     let testMode = 'all'
     let plantId: string | undefined
     try {
       const body = await req.json()
       testMode = body.test ?? 'all'
       plantId = body.plant_id
-    } catch { /* empty body is fine, default to 'all' */ }
+    } catch { /* default to 'all' */ }
 
     console.log(`[test-solarz-api] Mode: ${testMode}, Base URL: ${baseUrl}`)
 
-    // Step 1: Auth
-    const authResult = await testAuth(baseUrl, username, password)
-    results.push(authResult.result)
+    // Step 1: Auth test (via plant list)
+    const authResult = await testAuth(baseUrl, headers)
+    results.push(authResult)
 
-    if (!authResult.token || testMode === 'auth') {
+    if (!authResult.success || testMode === 'auth') {
       return new Response(JSON.stringify({
-        success: authResult.result.success,
+        success: authResult.success,
         mode: testMode,
         total_duration_ms: Date.now() - totalStart,
         results,
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const token = authResult.token
-
     // Step 2: Plants
-    if (['all', 'plants', 'metrics', 'devices'].includes(testMode)) {
-      const plantsResult = await testPlants(baseUrl, token)
+    if (['all', 'plants'].includes(testMode)) {
+      const plantsResult = await testPlants(baseUrl, headers)
       results.push(plantsResult.result)
-
-      // Use first plant if no plant_id provided
       if (!plantId && plantsResult.plants && plantsResult.plants.length > 0) {
-        plantId = plantsResult.plants[0].id
+        plantId = String(plantsResult.plants[0].id)
       }
     }
 
@@ -176,17 +194,15 @@ serve(async (req) => {
       }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // Step 3: Metrics + Alerts + Devices (parallel)
+    // Step 3: Detailed tests for a specific plant
     if (plantId && ['all', 'metrics'].includes(testMode)) {
-      const [metricsResult, alertsResult, devicesResult] = await Promise.all([
-        testMetrics(baseUrl, token, plantId),
-        testAlerts(baseUrl, token, plantId),
-        testDevices(baseUrl, token, plantId),
+      const [statusResult, powerResult, perfResult, energyResult] = await Promise.all([
+        testStatus(baseUrl, headers, plantId),
+        testPower(baseUrl, headers, plantId),
+        testPerformance(baseUrl, headers, plantId),
+        testEnergy(baseUrl, headers, plantId),
       ])
-      results.push(metricsResult, alertsResult, devicesResult)
-    } else if (testMode === 'all') {
-      const alertsResult = await testAlerts(baseUrl, token)
-      results.push(alertsResult)
+      results.push(statusResult, powerResult, perfResult, energyResult)
     }
 
     const allSuccess = results.every(r => r.success)
