@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
-import { useTicketsQuery, useClientesQuery, usePrestadoresQuery, useCreateTicketMutation, useUpdateTicketMutation, useDeleteTicketMutation } from '@/hooks/useTicketsQuery';
+import { useTickets, useClientes, usePrestadores, useCreateTicket, useUpdateTicket, useDeleteTicket } from '@/hooks/queries';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
