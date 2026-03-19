@@ -111,6 +111,7 @@ export class SolarzAdapter implements ISolarMonitoringSource {
     return {
       'Authorization': `Basic ${credentials}`,
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     };
   }
 
