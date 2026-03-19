@@ -155,66 +155,39 @@ serve(async (req) => {
     let aiRaw: string | null = null
 
     try {
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
-      if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured')
+      const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+      if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY not configured')
 
-      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
           'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'google/gemini-3-flash-preview',
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: userPrompt },
-          ],
-          tools: [{
-            type: 'function',
-            function: {
-              name: 'decide_action',
-              description: 'Retorna a decisão sobre qual ação tomar para o alerta solar.',
-              parameters: {
-                type: 'object',
-                properties: {
-                  action: { type: 'string', enum: ['criar_os', 'notificar_cliente', 'aguardar', 'escalar'] },
-                  reason: { type: 'string', description: 'Explicação da decisão' },
-                  priority: { type: 'string', enum: ['baixa', 'media', 'alta', 'critica'] },
-                },
-                required: ['action', 'reason', 'priority'],
-                additionalProperties: false,
-              },
-            },
-          }],
-          tool_choice: { type: 'function', function: { name: 'decide_action' } },
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 500,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: userPrompt }],
         }),
       })
 
       if (!aiResponse.ok) {
         const errText = await aiResponse.text()
-        console.error('AI gateway error:', aiResponse.status, errText)
-        throw new Error(`AI gateway returned ${aiResponse.status}`)
+        console.error('Claude API error:', aiResponse.status, errText)
+        throw new Error(`Claude API returned ${aiResponse.status}`)
       }
 
       const aiData = await aiResponse.json()
-      const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0]
-      if (toolCall?.function?.arguments) {
-        decision = typeof toolCall.function.arguments === 'string'
-          ? JSON.parse(toolCall.function.arguments)
-          : toolCall.function.arguments
-        aiRaw = JSON.stringify(decision)
+      const content = aiData.content?.[0]?.text ?? ''
+      aiRaw = content
+
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        decision = JSON.parse(jsonMatch[0])
       } else {
-        // Try content fallback
-        const content = aiData.choices?.[0]?.message?.content ?? ''
-        aiRaw = content
-        const jsonMatch = content.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          decision = JSON.parse(jsonMatch[0])
-        } else {
-          throw new Error('No valid decision in AI response')
-        }
+        throw new Error('No valid JSON in Claude response')
       }
 
       // Validate
