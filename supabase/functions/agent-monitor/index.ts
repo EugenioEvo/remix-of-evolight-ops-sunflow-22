@@ -15,12 +15,17 @@ function solarzHeaders(username: string, password: string): Record<string, strin
   return {
     'Authorization': `Basic ${credentials}`,
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   }
 }
 
 async function solarzGet(url: string, headers: Record<string, string>) {
   const res = await fetch(url, { headers })
+  const contentType = res.headers.get('content-type') || ''
   if (!res.ok) throw new Error(`SolarZ GET ${url} failed: ${res.status}`)
+  if (!contentType.includes('application/json')) {
+    throw new Error(`SolarZ returned non-JSON (${contentType}). Check credentials and URL.`)
+  }
   return res.json()
 }
 
@@ -30,7 +35,11 @@ async function solarzPost(url: string, headers: Record<string, string>, body?: a
     headers,
     body: body ? JSON.stringify(body) : undefined,
   })
+  const contentType = res.headers.get('content-type') || ''
   if (!res.ok) throw new Error(`SolarZ POST ${url} failed: ${res.status}`)
+  if (!contentType.includes('application/json')) {
+    throw new Error(`SolarZ returned non-JSON (${contentType}). Check credentials and URL.`)
+  }
   return res.json()
 }
 
