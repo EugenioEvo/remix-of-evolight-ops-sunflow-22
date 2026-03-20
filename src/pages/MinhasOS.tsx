@@ -1,7 +1,7 @@
 import { useState } from "react";
 import logger from '@/lib/logger';
 import { useAuth } from "@/hooks/useAuth";
-import { useOrdensServicoByTecnico, useUpdateOSStatus } from "@/hooks/useOrdensServico";
+import { useMinhasOS, useUpdateOSStatus } from "@/hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,7 @@ const MinhasOS = () => {
   const canViewOS = isTecnico || isAreaTecnica;
 
   // React Query hook with built-in realtime
-  const { data: ordensServicoData, isLoading: loading } = useOrdensServicoByTecnico({
+  const { data: ordensServicoData, isLoading: loading } = useMinhasOS({
     profileId: profile?.id,
     isTecnico,
     enabled: canViewOS,
