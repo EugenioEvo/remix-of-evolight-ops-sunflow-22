@@ -98,6 +98,71 @@ export type Database = {
         }
         Relationships: []
       }
+      cliente_prontuario: {
+        Row: {
+          canal_preferido: string | null
+          cargo: string | null
+          cliente_id: string
+          created_at: string
+          dados_extras: Json | null
+          email: string | null
+          historico_interacoes: Json | null
+          horario_preferido: string | null
+          id: string
+          nome_contato: string | null
+          notas: string | null
+          satisfacao_score: number | null
+          tags: string[] | null
+          telefone: string | null
+          ultima_interacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          canal_preferido?: string | null
+          cargo?: string | null
+          cliente_id: string
+          created_at?: string
+          dados_extras?: Json | null
+          email?: string | null
+          historico_interacoes?: Json | null
+          horario_preferido?: string | null
+          id?: string
+          nome_contato?: string | null
+          notas?: string | null
+          satisfacao_score?: number | null
+          tags?: string[] | null
+          telefone?: string | null
+          ultima_interacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          canal_preferido?: string | null
+          cargo?: string | null
+          cliente_id?: string
+          created_at?: string
+          dados_extras?: Json | null
+          email?: string | null
+          historico_interacoes?: Json | null
+          horario_preferido?: string | null
+          id?: string
+          nome_contato?: string | null
+          notas?: string | null
+          satisfacao_score?: number | null
+          tags?: string[] | null
+          telefone?: string | null
+          ultima_interacao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cliente_prontuario_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes: {
         Row: {
           cep: string | null
