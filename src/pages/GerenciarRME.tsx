@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RMEDetailDialog } from '@/components/RMEDetailDialog';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import { Pagination } from '@/components/Pagination';
-import { useRMEQuery, useRMEStatsQuery, useApproveRMEMutation, useRejectRMEMutation } from '@/hooks/useRMEQuery';
+import { useRMEListaPaginada, useRMEStats, useApproveRME, useRejectRME } from '@/hooks/queries';
 import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
 
 const GerenciarRME = () => {
