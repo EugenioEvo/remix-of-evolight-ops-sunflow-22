@@ -77,9 +77,9 @@ const WorkOrders = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  const { data: workOrders = [], isLoading: loading } = useWorkOrdersQuery();
+  const { data: workOrders = [], isLoading: loading } = useWorkOrders();
   const { data: clientes = [] } = useClientes();
-  const deleteOSMutation = useDeleteWorkOrder();
+  const deleteOSMutation = useDeleteOS();
   const sendEmailMutation = useSendCalendarInvite();
 
   const canManageOS = profile?.role === "admin" || profile?.role === "area_tecnica";

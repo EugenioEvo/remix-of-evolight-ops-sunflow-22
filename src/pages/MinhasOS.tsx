@@ -70,7 +70,7 @@ const MinhasOS = () => {
   const canViewOS = isTecnico || isAreaTecnica;
 
   // React Query hook with built-in realtime
-  const { data: ordensServicoData, isLoading: loading } = useOrdensServicoByTecnico({
+  const { data: ordensServicoData, isLoading: loading } = useMinhasOS({
     profileId: profile?.id,
     isTecnico,
     enabled: canViewOS,
