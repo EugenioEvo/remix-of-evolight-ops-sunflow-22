@@ -902,6 +902,15 @@ const Tickets = () => {
                               UFV/SolarZ: {ticket.clientes.ufv_solarz}
                             </Badge>
                           )}
+                          {ticket.origem && ticket.origem !== 'manual' && (
+                            <Badge variant="outline" className={
+                              ticket.origem.includes('jarvis') || ticket.origem === 'agente_monitor'
+                                ? 'bg-violet-100 text-violet-800 border-violet-200 text-xs'
+                                : 'bg-gray-100 text-gray-700 border-gray-200 text-xs'
+                            }>
+                              {ticket.origem.includes('jarvis') || ticket.origem === 'agente_monitor' ? '🤖 JARVIS' : ticket.origem}
+                            </Badge>
+                          )
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
