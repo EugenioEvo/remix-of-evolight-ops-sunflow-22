@@ -126,6 +126,56 @@ export const ticketService = {
 
   /** Exclui um ticket */
   async deleteTicket(id: string): Promise<void> {
+    // Remove related solar_alerts first to avoid FK constraint
+    const { error: alertsError } = await supabase
+      .from('solar_alerts')
+      .delete()
+      .eq('ticket_id', id);
+    if (alertsError) {
+      console.warn('Error clearing solar_alerts:', alertsError.message);
+    }
+
+    // Remove related status_historico
+    const { error: histError } = await supabase
+      .from('status_historico')
+      .delete()
+      .eq('ticket_id', id);
+    if (histError) {
+      console.warn('Error clearing status_historico:', histError.message);
+    }
+
+    // Remove related aprovacoes
+    const { error: aprovError } = await supabase
+      .from('aprovacoes')
+      .delete()
+      .eq('ticket_id', id);
+    if (aprovError) {
+      console.warn('Error clearing aprovacoes:', aprovError.message);
+    }
+
+    // Remove related ordens_servico (and their RME/tokens)
+    const { data: osData } = await supabase
+      .from('ordens_servico')
+      .select('id')
+      .eq('ticket_id', id);
+    
+    if (osData && osData.length > 0) {
+      const osIds = osData.map(os => os.id);
+      
+      // Remove RME reports linked to these OS
+      for (const osId of osIds) {
+        await supabase.from('rme_relatorios').delete().eq('ordem_servico_id', osId);
+        await supabase.from('presence_confirmation_tokens').delete().eq('ordem_servico_id', osId);
+      }
+      
+      // Remove the OS themselves
+      await supabase.from('ordens_servico').delete().eq('ticket_id', id);
+    }
+
+    // Remove RME reports linked directly to ticket
+    await supabase.from('rme_relatorios').delete().eq('ticket_id', id);
+
+    // Finally delete the ticket
     const { error } = await supabase.from('tickets').delete().eq('id', id);
     if (error) {
       const { handleSupabaseError } = await import('./api');

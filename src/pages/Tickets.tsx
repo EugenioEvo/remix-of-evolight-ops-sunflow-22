@@ -891,7 +891,7 @@ const Tickets = () => {
                             {ticket.numero_ticket}
                           </Badge>
                         </div>
-                        <CardDescription className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap text-sm text-muted-foreground">
                           <span>Cliente: {ticket.clientes?.empresa || ticket.clientes?.profiles?.nome}</span>
                           <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs flex items-center gap-1">
                             <Star className="h-3 w-3" />
@@ -902,7 +902,7 @@ const Tickets = () => {
                               UFV/SolarZ: {ticket.clientes.ufv_solarz}
                             </Badge>
                           )}
-                        </CardDescription>
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
                         <Badge className={getStatusColor(ticket.status)}>
