@@ -11,7 +11,7 @@ export const solarKeys = {
   metricsByPlant: (plantId: string, range?: string) => [...solarKeys.metrics, plantId, range] as const,
   alerts: ['solar-alerts'] as const,
   alertList: (filters?: Record<string, unknown>) => [...solarKeys.alerts, 'list', filters] as const,
-  agentLogs: ['solar-agent-logs'] as const,
+  agentLogs: (filters?: Record<string, unknown>) => ['solar-agent-logs', filters] as const,
 };
 
 // ===== Solar Plants =====
