@@ -910,7 +910,7 @@ const Tickets = () => {
                             }>
                               {ticket.origem.includes('jarvis') || ticket.origem === 'agente_monitor' ? '🤖 JARVIS' : ticket.origem}
                             </Badge>
-                          )
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-2">
