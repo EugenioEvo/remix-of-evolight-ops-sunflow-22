@@ -5,13 +5,14 @@ import { TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
 
 export type TrendDirection = 'up' | 'down' | 'neutral';
 
-interface KPICardProps {
+export interface KPICardProps {
   title: string;
   value: string | number;
   subtitle?: string;
   description?: string;
   icon?: LucideIcon;
   iconClassName?: string;
+  valueClassName?: string;
   trend?: {
     direction: TrendDirection;
     label: string;
@@ -33,6 +34,7 @@ export function KPICard({
   description,
   icon: Icon,
   iconClassName,
+  valueClassName,
   trend,
   loading = false,
   className,
@@ -58,7 +60,7 @@ export function KPICard({
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-muted-foreground truncate">{title}</p>
-            <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
+            <p className={cn('mt-1 text-2xl font-bold text-foreground', valueClassName)}>{value}</p>
             {subtitle && (
               <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
             )}
