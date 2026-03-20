@@ -40,6 +40,7 @@ import PlantNew from "./pages/PlantNew";
 import PlantDetail from "./pages/PlantDetail";
 import SunflowWorkOrders from "./pages/SunflowWorkOrders";
 import SunflowAlerts from "./pages/SunflowAlerts";
+import JarvisAgents from "./pages/JarvisAgents";
 import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient({
@@ -160,6 +161,11 @@ const App = () => (
                             <Route path="/sunflow/alerts" element={
                               <ProtectedRoute roles={['admin', 'area_tecnica', 'tecnico_campo']}>
                                 <SunflowAlerts />
+                              </ProtectedRoute>
+                            } />
+                            <Route path="/sunflow/agents" element={
+                              <ProtectedRoute roles={['admin', 'area_tecnica']}>
+                                <JarvisAgents />
                               </ProtectedRoute>
                             } />
                             {/* Configurações */}
