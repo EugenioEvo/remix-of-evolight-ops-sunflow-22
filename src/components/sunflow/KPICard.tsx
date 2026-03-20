@@ -5,13 +5,14 @@ import { TrendingUp, TrendingDown, Minus, type LucideIcon } from 'lucide-react';
 
 export type TrendDirection = 'up' | 'down' | 'neutral';
 
-interface KPICardProps {
+export interface KPICardProps {
   title: string;
   value: string | number;
   subtitle?: string;
   description?: string;
   icon?: LucideIcon;
   iconClassName?: string;
+  valueClassName?: string;
   trend?: {
     direction: TrendDirection;
     label: string;
