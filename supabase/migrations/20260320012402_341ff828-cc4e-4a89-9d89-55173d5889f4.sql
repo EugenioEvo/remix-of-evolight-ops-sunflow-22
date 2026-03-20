@@ -1,0 +1,1 @@
+ALTER TABLE solar_plants ADD CONSTRAINT solar_plants_solarz_plant_id_unique UNIQUE (solarz_plant_id);
