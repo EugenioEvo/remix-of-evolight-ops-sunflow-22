@@ -40,6 +40,7 @@ import PlantNew from "./pages/PlantNew";
 import PlantDetail from "./pages/PlantDetail";
 import SunflowWorkOrders from "./pages/SunflowWorkOrders";
 import SunflowAlerts from "./pages/SunflowAlerts";
+import JarvisAgents from "./pages/JarvisAgents";
 import Configuracoes from "./pages/Configuracoes";
 
 const queryClient = new QueryClient({
