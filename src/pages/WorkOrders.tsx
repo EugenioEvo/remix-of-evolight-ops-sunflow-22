@@ -18,7 +18,7 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { EmptyState } from "@/components/EmptyState";
 import { LoadingState } from "@/components/LoadingState";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useWorkOrdersQuery, useDeleteWorkOrder, useSendCalendarInvite } from "@/hooks/useWorkOrdersQuery";
+import { useWorkOrders, useDeleteOS, useSendCalendarInvite } from "@/hooks/queries";
 import { useClientes } from "@/hooks/queries";
 
 interface WorkOrder {
