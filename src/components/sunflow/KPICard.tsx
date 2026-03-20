@@ -34,6 +34,7 @@ export function KPICard({
   description,
   icon: Icon,
   iconClassName,
+  valueClassName,
   trend,
   loading = false,
   className,
