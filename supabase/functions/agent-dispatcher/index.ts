@@ -190,6 +190,7 @@ serve(async (req) => {
     }
 
     // ── 5. Get a created_by user (admin) ──────────────────
+    // created_by has FK to auth.users, so we must use user_id directly
     const { data: adminRole } = await supabaseAdmin
       .from('user_roles')
       .select('user_id')
@@ -197,15 +198,7 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
-    const { data: adminProfile } = adminRole
-      ? await supabaseAdmin
-          .from('profiles')
-          .select('id')
-          .eq('user_id', adminRole.user_id)
-          .maybeSingle()
-      : { data: null }
-
-    const createdBy = adminProfile?.id ?? adminRole?.user_id ?? '00000000-0000-0000-0000-000000000000'
+    const createdBy = adminRole?.user_id ?? '00000000-0000-0000-0000-000000000000'
 
     // ── 6. Build ticket description ───────────────────────
     const endereco = plant.endereco ?? cliente?.endereco ?? 'Endereço não informado'
