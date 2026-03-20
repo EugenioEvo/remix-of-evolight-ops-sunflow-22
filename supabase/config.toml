@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.test-solarz-api]
 verify_jwt = false
+
+[functions.migrate-data]
+verify_jwt = false
