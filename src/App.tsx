@@ -163,6 +163,11 @@ const App = () => (
                                 <SunflowAlerts />
                               </ProtectedRoute>
                             } />
+                            <Route path="/sunflow/agents" element={
+                              <ProtectedRoute roles={['admin', 'area_tecnica']}>
+                                <JarvisAgents />
+                              </ProtectedRoute>
+                            } />
                             {/* Configurações */}
                             <Route path="/configuracoes" element={<Configuracoes />} />
                             <Route path="*" element={<NotFound />} />

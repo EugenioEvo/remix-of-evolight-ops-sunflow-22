@@ -142,7 +142,7 @@ export function useResolveSolarAlert() {
 
 export function useSolarAgentLogs(filters?: { agentName?: string; limit?: number }) {
   return useQuery({
-    queryKey: [...solarKeys.agentLogs, filters],
+    queryKey: solarKeys.agentLogs(filters as Record<string, unknown>),
     queryFn: async () => {
       let query = supabase
         .from('solar_agent_logs')

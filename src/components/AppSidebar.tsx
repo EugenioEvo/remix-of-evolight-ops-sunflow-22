@@ -46,6 +46,7 @@ const sunflowItems = [
   { title: "Dashboard Solar", url: "/sunflow", icon: Sun },
   { title: "Usinas", url: "/sunflow/plants", icon: Zap },
   { title: "Alertas", url: "/sunflow/alerts", icon: AlertTriangle },
+  { title: "Agentes JARVIS", url: "/sunflow/agents", icon: Bot },
   { title: "Tickets JARVIS", url: "/tickets", icon: Package },
 ];
 
