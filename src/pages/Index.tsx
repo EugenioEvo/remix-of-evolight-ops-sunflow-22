@@ -143,10 +143,9 @@ const Index = () => {
   };
 
   useEffect(() => {
-    if (profile?.role === 'cliente') {
-      navigate('/meu-painel');
-    }
-  }, [profile, navigate]);
+    // Redirect all users to /sunflow as default
+    navigate('/sunflow');
+  }, [navigate]);
 
   if (profile?.role === 'tecnico_campo') {
     return <TechnicianDashboard />;

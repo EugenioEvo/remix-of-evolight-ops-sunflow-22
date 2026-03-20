@@ -72,7 +72,7 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        navigate('/sunflow');
       }
     };
     checkUser();
@@ -95,7 +95,7 @@ const Auth = () => {
         description: "Bem-vindo de volta.",
       });
       
-      navigate('/');
+      navigate('/sunflow');
     } catch (error: any) {
       toast({
         title: "Erro no login",
@@ -204,7 +204,7 @@ const Auth = () => {
           description: "Login realizado com sucesso.",
         });
 
-        navigate('/');
+        navigate('/sunflow');
       }
     } catch (error: any) {
       toast({
