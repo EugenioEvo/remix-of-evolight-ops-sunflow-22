@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RMEDetailDialog } from '@/components/RMEDetailDialog';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import { Pagination } from '@/components/Pagination';
-import { useRMEQuery, useRMEStatsQuery, useApproveRMEMutation, useRejectRMEMutation } from '@/hooks/useRMEQuery';
+import { useRMEListaPaginada, useRMEStats, useApproveRME, useRejectRME } from '@/hooks/queries';
 import { useTicketsRealtime } from '@/hooks/useTicketsRealtime';
 
 const GerenciarRME = () => {
@@ -29,10 +29,10 @@ const GerenciarRME = () => {
   const { toast } = useToast();
 
   // React Query hooks
-  const { data, isLoading, refetch } = useRMEQuery({ page, searchTerm, status: statusFilter });
-  const { data: stats } = useRMEStatsQuery();
-  const approveMutation = useApproveRMEMutation();
-  const rejectMutation = useRejectRMEMutation();
+  const { data, isLoading, refetch } = useRMEListaPaginada({ page, searchTerm, status: statusFilter });
+  const { data: stats } = useRMEStats();
+  const approveMutation = useApproveRME();
+  const rejectMutation = useRejectRME();
 
   // Realtime updates
   useTicketsRealtime({ onTicketChange: () => refetch() });
